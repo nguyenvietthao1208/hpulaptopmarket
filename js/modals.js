@@ -13,6 +13,10 @@ let rejectModalId = null;
 let ratingModalId = null;
 let ratingStars = 5;
 let cancelModalId = null;
+let notificationMessage = null;
+let deleteProductModalId = null;
+let deleteAccountStep = 0; // 0: nhập mật khẩu, 1: nhập mã xác nhận
+let deleteAccountCode = '';
 
 function openAuth(mode){ authModal=mode; renderModals(); }
 
@@ -42,9 +46,69 @@ function cancelOrderPrompt(orderId){ cancelModalId=orderId; renderModals(); }
 
 function closeCancelModal(){ cancelModalId=null; renderModals(); }
 
+function openDeleteProductModal(id){ deleteProductModalId=id; renderModals(); }
+
+function closeDeleteProductModal(){ deleteProductModalId=null; renderModals(); }
+
+function openDeleteAccountModal(){ deleteAccountStep=0; deleteAccountCode=''; renderModals(); }
+
+function closeDeleteAccountModal(){ deleteAccountStep=0; deleteAccountCode=''; renderModals(); }
+
 function renderAuthModalIfNeeded(){
   if(!authModal) return '';
   const isLogin = authModal==='login';
+  const isRegister = authModal==='register';
+  const isForgot = authModal==='forgot';
+  const isForgotVerify = authModal==='forgot-verify';
+
+  if(isForgot){
+    return `<div class="modal-overlay" onclick="if(event.target===this)closeAuth()">
+      <div class="modal">
+        <div class="modal-head"><h3>Quên mật khẩu</h3><button class="modal-close" onclick="closeAuth()">×</button></div>
+        <form onsubmit="return submitForgotPassword(event)">
+          <div class="field"><label>Email muốn đặt lại mật khẩu *</label><input class="input" type="email" name="email" required></div>
+          <button class="btn btn-primary btn-block" type="submit">Gửi mã xác thực</button>
+        </form>
+        <p class="field hint" style="margin-top:14px;text-align:center;">Đã nhớ mật khẩu? <a href="#" class="linklike" onclick="openAuth('login');return false;">Đăng nhập</a></p>
+      </div>
+    </div>`;
+  }
+
+  if(isForgotVerify){
+    const signedInEmail = state.currentUser && state.currentUser.email ? state.currentUser.email.trim().toLowerCase() : '';
+    const hasSignedInUser = !!signedInEmail;
+    return `<div class="modal-overlay" onclick="if(event.target===this)closeAuth()">
+      <div class="modal">
+        <div class="modal-head"><h3>Xác thực mã</h3><button class="modal-close" onclick="closeAuth()">×</button></div>
+        <form onsubmit="return submitForgotPasswordVerify(event)">
+          ${hasSignedInUser ? `
+            <div class="field">
+              <label>Mã xác thực 4 chữ số *</label>
+              <div style="display:grid;grid-template-columns:repeat(4,minmax(48px,1fr));gap:10px;">
+                ${[0,1,2,3].map(i => `<input class="input" data-otp-index="${i}" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" style="text-align:center;font-size:22px;padding:10px 0;" oninput="handleOtpInput(this)" onkeydown="handleOtpKeydown(this, event)" onpaste="handleOtpPaste(event)" />`).join('')}
+              </div>
+            </div>
+            <div class="field"><label>Mật khẩu mới *</label><input class="input" type="password" name="newPassword" required minlength="6" placeholder="Nhập mật khẩu mới"></div>
+            <div class="field"><label>Nhập lại mật khẩu mới *</label><input class="input" type="password" name="confirmPassword" required minlength="6" placeholder="Nhập lại mật khẩu mới"></div>
+            <input type="hidden" name="email" value="${esc(signedInEmail)}">
+          ` : `
+            <p class="field hint" style="text-align:center;margin-bottom:16px;color:#666;">Nhập mã xác thực 4 chữ số đã được gửi tới email của bạn</p>
+            <div class="field">
+              <label>Mã xác thực 4 chữ số *</label>
+              <div style="display:grid;grid-template-columns:repeat(4,minmax(48px,1fr));gap:10px;">
+                ${[0,1,2,3].map(i => `<input class="input" data-otp-index="${i}" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" style="text-align:center;font-size:22px;padding:10px 0;" oninput="handleOtpInput(this)" onkeydown="handleOtpKeydown(this, event)" onpaste="handleOtpPaste(event)" />`).join('')}
+              </div>
+            </div>
+            <input type="hidden" name="email" value="">
+            <input type="hidden" name="newPassword" value="">
+            <input type="hidden" name="confirmPassword" value="">
+          `}
+          <button class="btn btn-primary btn-block" type="submit">${hasSignedInUser ? 'Cập nhật mật khẩu' : 'Xác thực'}</button>
+        </form>
+      </div>
+    </div>`;
+  }
+
   return `<div class="modal-overlay" onclick="if(event.target===this)closeAuth()">
     <div class="modal">
       <div class="modal-head"><h3>${isLogin?'Đăng nhập':'Đăng ký tài khoản'}</h3><button class="modal-close" onclick="closeAuth()">×</button></div>
@@ -57,7 +121,7 @@ function renderAuthModalIfNeeded(){
         <div class="field"><label>Mật khẩu *</label><input class="input" type="password" name="password" required minlength="6"></div>
         <button class="btn btn-primary btn-block" type="submit">${isLogin?'Đăng nhập':'Tạo tài khoản'}</button>
       </form>
-      <p class="field hint" style="margin-top:14px;text-align:center;">${isLogin? `Chưa có tài khoản? <a href="#" class="linklike" onclick="openAuth('register');return false;">Đăng ký</a>`:`Đã có tài khoản? <a href="#" class="linklike" onclick="openAuth('login');return false;">Đăng nhập</a>`}</p>
+      <p class="field hint" style="margin-top:14px;text-align:center;">${isLogin ? `Chưa có tài khoản? <a href="#" class="linklike" onclick="openAuth('register');return false;">Đăng ký</a> · <a href="#" class="linklike" onclick="openAuth('forgot');return false;">Quên mật khẩu?</a>` : `Đã có tài khoản? <a href="#" class="linklike" onclick="openAuth('login');return false;">Đăng nhập</a>`}</p>
     </div>
   </div>`;
 }
@@ -120,10 +184,123 @@ function renderCancelModalIfNeeded(){
   </div>`;
 }
 
+function renderDeleteProductModalIfNeeded(){
+  if(!deleteProductModalId) return '';
+  return `<div class="modal-overlay" onclick="if(event.target===this)closeDeleteProductModal()">
+    <div class="modal">
+      <div class="modal-head"><h3>Gỡ tin đăng</h3><button class="modal-close" onclick="closeDeleteProductModal()">×</button></div>
+      <form onsubmit="return submitDeleteProduct(event,'${deleteProductModalId}')">
+        <div class="field"><label>Lý do gỡ tin *</label><textarea class="textarea" name="reason" required placeholder="Vd: Vi phạm chính sách, nội dung không phù hợp, sản phẩm không tồn tại..."></textarea></div>
+        <button class="btn btn-danger btn-block" type="submit">Xác nhận gỡ tin</button>
+      </form>
+    </div>
+  </div>`;
+}
+
+function renderDeleteAccountModalIfNeeded(){
+  if(deleteAccountStep === undefined) return '';
+  if(deleteAccountStep === 0){
+    return `<div class="modal-overlay" onclick="if(event.target===this)closeDeleteAccountModal()">
+      <div class="modal">
+        <div class="modal-head"><h3>Xóa tài khoản</h3><button class="modal-close" onclick="closeDeleteAccountModal()">×</button></div>
+        <div style="background:var(--danger-bg);padding:14px;border-radius:var(--radius);margin-bottom:16px;font-size:13px;color:var(--danger);line-height:1.5;">
+          <strong>⚠️ Cảnh báo:</strong> Bạn sắp xóa vĩnh viễn tài khoản và toàn bộ dữ liệu. Thao tác này <strong>không thể hoàn tác</strong>.
+        </div>
+        <form onsubmit="return submitDeleteAccountStep1(event)">
+          <div class="field"><label>Nhập mật khẩu để xác nhận *</label><input class="input" type="password" name="password" required placeholder="Nhập mật khẩu hiện tại"></div>
+          <button class="btn btn-danger btn-block" type="submit">Tiếp tục</button>
+          <button class="btn btn-ghost btn-block" type="button" onclick="closeDeleteAccountModal()" style="margin-top:8px;">Hủy</button>
+        </form>
+      </div>
+    </div>`;
+  }
+  return `<div class="modal-overlay" onclick="if(event.target===this)closeDeleteAccountModal()">
+    <div class="modal">
+      <div class="modal-head"><h3>Xác nhận xóa tài khoản</h3><button class="modal-close" onclick="closeDeleteAccountModal()">×</button></div>
+      <p class="field hint" style="text-transform:none;margin-bottom:14px;">Chúng tôi đã gửi mã xác nhận 4 chữ số đến email của bạn. Nhập mã để tiếp tục xóa tài khoản.</p>
+      <form onsubmit="return submitDeleteAccountStep2(event)">
+        <div class="field">
+          <label>Mã xác nhận 4 chữ số *</label>
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(48px,1fr));gap:10px;">
+            ${[0,1,2,3].map(i => `<input class="input" data-delete-otp-index="${i}" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" style="text-align:center;font-size:22px;padding:10px 0;" oninput="handleDeleteOtpInput(this)" onkeydown="handleDeleteOtpKeydown(this, event)" onpaste="handleDeleteOtpPaste(event)" />`).join('')}
+          </div>
+        </div>
+        <button class="btn btn-danger btn-block" type="submit">Xác nhận xóa vĩnh viễn</button>
+        <button class="btn btn-ghost btn-block" type="button" onclick="closeDeleteAccountModal()" style="margin-top:8px;">Hủy</button>
+      </form>
+    </div>
+  </div>`;
+}
+
+function renderNotificationIfNeeded(){
+  if(!notificationMessage) return '';
+  return `<div class="modal-overlay" onclick="closeNotification()" style="background:rgba(0,0,0,0.5);">
+    <div class="modal" style="text-align:center;max-width:360px;">
+      <div style="padding:24px;">
+        <h3 style="margin:0 0 14px 0;color:#333;font-size:18px;">✅ Thành công</h3>
+        <p style="margin:0 0 20px 0;color:#666;font-size:14px;line-height:1.5;white-space:pre-wrap;">${esc(notificationMessage)}</p>
+        <button class="btn btn-primary btn-block" type="button" onclick="closeNotification()">Đóng</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function showNotification(msg){
+  notificationMessage = msg;
+  renderModals();
+}
+
+function closeNotification(){
+  notificationMessage = null;
+  renderModals();
+}
+
 function renderModals(){
   document.getElementById('modal-root').innerHTML =
     renderAuthModalIfNeeded() + renderCheckoutModalIfNeeded() + renderRejectModalIfNeeded() +
-    renderRatingModalIfNeeded() + renderCancelModalIfNeeded();
+    renderRatingModalIfNeeded() + renderCancelModalIfNeeded() + renderDeleteProductModalIfNeeded() + renderDeleteAccountModalIfNeeded() + renderNotificationIfNeeded();
+}
+
+function handleOtpInput(el){
+  const value = (el.value || '').replace(/\D/g,'').slice(-1);
+  el.value = value;
+  const idx = Number(el.dataset.otpIndex || 0);
+  const form = el.closest('form');
+  if(!form) return;
+  const next = form.querySelector(`input[data-otp-index="${idx + 1}"]`);
+  if(value && next){ next.focus(); }
+}
+
+function handleOtpKeydown(el, event){
+  const idx = Number(el.dataset.otpIndex || 0);
+  const form = el.closest('form');
+  if(!form) return;
+
+  if(event.key === 'Backspace' && !el.value && idx > 0){
+    const prev = form.querySelector(`input[data-otp-index="${idx - 1}"]`);
+    if(prev){ prev.focus(); prev.value=''; }
+  }
+
+  if(event.key === 'ArrowLeft' || event.key === 'ArrowRight'){
+    const delta = event.key === 'ArrowLeft' ? -1 : 1;
+    const target = form.querySelector(`input[data-otp-index="${idx + delta}"]`);
+    if(target){ event.preventDefault(); target.focus(); }
+  }
+}
+
+function handleOtpPaste(event){
+  const pasted = (event.clipboardData || window.clipboardData || {}).getData?.('text') || '';
+  const digits = pasted.replace(/\D/g,'').slice(0,4);
+  if(!digits) return;
+  event.preventDefault();
+  const form = event.target.closest('form');
+  if(!form) return;
+  const fields = Array.from(form.querySelectorAll('input[data-otp-index]'));
+  digits.split('').forEach((digit, index) => {
+    if(fields[index]) fields[index].value = digit;
+  });
+  const target = fields[Math.min(digits.length, fields.length - 1)];
+  if(target) target.focus();
 }
 
 async function closeModalsAndRefresh(){
@@ -133,8 +310,60 @@ async function closeModalsAndRefresh(){
 }
 function getRatingStars(){ return ratingStars; }
 
+if (typeof window !== 'undefined') {
+  window.handleOtpInput = handleOtpInput;
+  window.handleOtpKeydown = handleOtpKeydown;
+  window.handleOtpPaste = handleOtpPaste;
+  window.setDeleteAccountStep = (step) => { deleteAccountStep = step; renderModals(); };
+  window.handleDeleteOtpInput = handleDeleteOtpInput;
+  window.handleDeleteOtpKeydown = handleDeleteOtpKeydown;
+  window.handleDeleteOtpPaste = handleDeleteOtpPaste;
+}
+
+// OTP handlers cho modal xóa tài khoản (tương tự handleOtpInput nhưng dùng data-delete-otp-index)
+function handleDeleteOtpInput(el){
+  const value = (el.value || '').replace(/\D/g,'').slice(-1);
+  el.value = value;
+  const idx = Number(el.dataset.deleteOtpIndex || 0);
+  const form = el.closest('form');
+  if(!form) return;
+  const next = form.querySelector(`input[data-delete-otp-index="${idx + 1}"]`);
+  if(value && next){ next.focus(); }
+}
+
+function handleDeleteOtpKeydown(el, event){
+  const idx = Number(el.dataset.deleteOtpIndex || 0);
+  const form = el.closest('form');
+  if(!form) return;
+  if(event.key === 'Backspace' && !el.value && idx > 0){
+    const prev = form.querySelector(`input[data-delete-otp-index="${idx - 1}"]`);
+    if(prev){ prev.focus(); prev.value=''; }
+  }
+  if(event.key === 'ArrowLeft' || event.key === 'ArrowRight'){
+    const delta = event.key === 'ArrowLeft' ? -1 : 1;
+    const target = form.querySelector(`input[data-delete-otp-index="${idx + delta}"]`);
+    if(target){ event.preventDefault(); target.focus(); }
+  }
+}
+
+function handleDeleteOtpPaste(event){
+  const pasted = (event.clipboardData || window.clipboardData || {}).getData?.('text') || '';
+  const digits = pasted.replace(/\D/g,'').slice(0,4);
+  if(!digits) return;
+  event.preventDefault();
+  const form = event.target.closest('form');
+  if(!form) return;
+  const fields = Array.from(form.querySelectorAll('input[data-delete-otp-index]'));
+  digits.split('').forEach((digit, index) => {
+    if(fields[index]) fields[index].value = digit;
+  });
+  const target = fields[Math.min(digits.length, fields.length - 1)];
+  if(target) target.focus();
+}
+
 export {
   openAuth, closeAuth, openCheckout, closeCheckout,
   rejectProductPrompt, closeRejectModal, openRating, closeRatingModal, setRatingStars, getRatingStars,
-  cancelOrderPrompt, closeCancelModal, renderModals, closeModalsAndRefresh
+  cancelOrderPrompt, closeCancelModal, renderModals, closeModalsAndRefresh, showNotification, closeNotification,
+  openDeleteProductModal, closeDeleteProductModal, openDeleteAccountModal, closeDeleteAccountModal
 };

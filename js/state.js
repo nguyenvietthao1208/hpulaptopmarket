@@ -6,6 +6,11 @@
 export const state = {
   currentUser: null,   // { uid, name, email, phone, role, cart, ... } hoặc null
   route: { page: 'home', params: {} },
+  notifications: [],   // Danh sách thông báo của user hiện tại
+  userOrders: [],      // Danh sách đơn hàng của user
+  userProducts: [],    // Danh sách sản phẩm của user
+  products: [],        // Danh sách sản phẩm (realtime)
+  darkMode: localStorage.getItem('hpulm-theme') === 'dark' || false, // Dark mode preference
 };
 
 const STATUS_LABEL = { pending:'Chờ duyệt', approved:'Còn hàng', rejected:'Bị từ chối', reserved:'Đang được đặt', sold:'Đã bán' };

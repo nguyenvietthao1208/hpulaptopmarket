@@ -4,7 +4,6 @@
 // ============================================================
 import { state, STATUS_LABEL, STATUS_CLASS } from './state.js';
 import { esc, fmtDate, avatarHtml, toast, runHeroCountUp, sortDesc } from './helpers.js';
-import { fetchWhere } from './firestore-helpers.js';
 import { db } from './firebase-init.js';
 import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { openAuth } from './modals.js';
@@ -13,6 +12,7 @@ import { pageHome } from './pages/home.js';
 import { pageProduct } from './pages/product.js';
 import { pageSell, renderThumbs } from './pages/sell.js';
 import { pageMyListings } from './pages/mylistings.js';
+import { pageRemoved } from './pages/removed.js';
 import { pageCart } from './pages/cart.js';
 import { pageOrders } from './pages/orders.js';
 import { pageAdmin } from './pages/admin.js';
@@ -77,21 +77,43 @@ async function goMyListings(){ if(requireLogin()) await nav('mylistings'); }
 
 async function goOrders(){ if(requireLogin()) await nav('orders', {tab:'buy'}); }
 
+// Bật/tắt panel thông báo — CHỈ render lại header (nhẹ, không đụng nội dung
+// trang, không scroll, không reload). Panel tự đóng khi bấm ra ngoài (xem
+// listener ở dưới).
 async function toggleNotif(){
   notifOpen = !notifOpen;
-  await render();
+  await renderHeader();
 }
+
+// Đóng panel thông báo khi bấm ra ngoài vùng panel/nút thông báo
+document.addEventListener('click', (e) => {
+  if(!notifOpen) return;
+  const wrap = document.querySelector('.notif-wrap');
+  if(!wrap) return;
+  if(!wrap.contains(e.target)){
+    notifOpen = false;
+    renderHeader();
+  }
+});
 
 async function renderHeader(){
   const root = document.getElementById('header-root');
   let cartCount = 0, unread = 0;
   if(state.currentUser){
-    cartCount = (state.currentUser.cart||[]).length;
-    try{
-      const notifs = await fetchWhere('notifications','userId','==',state.currentUser.uid);
-      headerNotifCache = sortDesc(notifs).slice(0,15);
-      unread = notifs.filter(n=>!n.read).length;
-    }catch(err){ headerNotifCache = []; }
+    // Đếm CHỈ những sản phẩm trong giỏ CÒN TỒN TẠI (ID có trong state.products).
+    // Nếu cart chứa ID sản phẩm đã bị xóa/gỡ → tự dọn dẹp khỏi Firestore.
+    const cartIds = state.currentUser.cart || [];
+    const productIds = new Set((state.products || []).map(p => p.id));
+    const validIds = cartIds.filter(id => productIds.has(id));
+    cartCount = validIds.length;
+    if(validIds.length !== cartIds.length){
+      // Có ID rác (sản phẩm đã bị xóa) — dọn dẹp im lặng
+      cleanupCart(cartIds, validIds);
+    }
+    // Dùng state.notifications (đã được realtime cập nhật) thay vì fetch lại Firestore
+    const notifs = state.notifications || [];
+    headerNotifCache = sortDesc(notifs).slice(0,15);
+    unread = notifs.filter(n=>!n.read).length;
   } else {
     headerNotifCache = [];
   }
@@ -110,10 +132,14 @@ async function renderHeader(){
       ${state.currentUser && state.currentUser.role==='admin' ? `<a class="nav-link ${state.route.page==='admin'?'active':''}" href="#" onclick="nav('admin');return false;">Quản trị</a>` : ''}
     </nav>
     <div class="topbar-right">
+      <button class="btn btn-ghost btn-sm" onclick="toggleDarkMode()" title="Chuyển đổi Dark/Light Mode">${state.darkMode ? '☀️' : '🌙'}</button>
       <a href="#" class="nav-link" onclick="nav('cart');return false;">Giỏ hàng${cartCount?`<span class="count-pill">${cartCount}</span>`:''}</a>
       ${state.currentUser?`
       <div class="notif-wrap">
-        <a href="#" class="nav-link" onclick="toggleNotif();return false;">Thông báo${unread?`<span class="count-pill">${unread}</span>`:''}</a>
+        <!-- stopPropagation: chặn sự kiện click nổi bọt lên document — nếu không,
+             listener "đóng khi bấm ra ngoài" sẽ thấy target đã bị xóa khỏi DOM
+             (do renderHeader thay DOM) và đóng panel ngay sau khi vừa mở. -->
+        <a href="#" class="nav-link" onclick="event.stopPropagation();toggleNotif();return false;">Thông báo${unread?`<span class="count-pill">${unread}</span>`:''}</a>
         ${notifOpen?renderNotifPanel():''}
       </div>
       <a href="#" onclick="nav('profile');return false;" style="display:flex;align-items:center;gap:7px;text-decoration:none;">
@@ -127,6 +153,15 @@ async function renderHeader(){
       `}
     </div>
   `;
+}
+
+// Dọn dẹp cart chứa ID sản phẩm không còn tồn tại (đã bị xóa/gỡ bởi admin).
+// Chạy ngầm, không làm phiền người dùng.
+async function cleanupCart(staleIds, validIds){
+  try{
+    await updateDoc(doc(db,'users',state.currentUser.uid), { cart: validIds });
+    state.currentUser.cart = validIds;
+  }catch(err){ /* im lặng — sẽ dọn lại ở lần render sau */ }
 }
 
 function renderNotifPanel(){
@@ -163,27 +198,33 @@ function skeletonFor(page){
   return `<div class="wrap section"><div class="skel skel-line w40" style="margin-left:0;height:22px;"></div><div class="skel skel-line w60" style="margin-left:0;margin-top:18px;height:80px;border-radius:12px;"></div></div>`;
 }
 
-async function renderPage(){
+// Sinh HTML cho trang hiện tại (dùng chung cho renderPage và renderPageSmooth)
+async function buildPageHtml(){
+  switch(state.route.page){
+    case 'home': return await pageHome();
+    case 'product': return await pageProduct(state.route.params.id);
+    case 'sell': return await pageSell();
+    case 'mylistings': return await pageMyListings();
+    case 'removed': return await pageRemoved();
+    case 'cart': return await pageCart();
+    case 'orders': return await pageOrders();
+    case 'admin': return await pageAdmin();
+    case 'seller': return await pageSeller(state.route.params.id);
+    case 'profile': return await pageProfile();
+    case 'leaderboard': return await pageLeaderboard();
+    case 'history': return await pageHistory();
+    case 'faq': return await pageFaq();
+    case 'privacy': return await pagePrivacy();
+    default: return pageNotFound();
+  }
+}
+
+async function renderPage(showSkeleton = true){
   const app = document.getElementById('app');
-  app.innerHTML = skeletonFor(state.route.page);
+  if(showSkeleton) app.innerHTML = skeletonFor(state.route.page);
   let html = '';
   try{
-    switch(state.route.page){
-      case 'home': html = await pageHome(); break;
-      case 'product': html = await pageProduct(state.route.params.id); break;
-      case 'sell': html = await pageSell(); break;
-      case 'mylistings': html = await pageMyListings(); break;
-      case 'cart': html = await pageCart(); break;
-      case 'orders': html = await pageOrders(); break;
-      case 'admin': html = await pageAdmin(); break;
-      case 'seller': html = await pageSeller(state.route.params.id); break;
-      case 'profile': html = await pageProfile(); break;
-      case 'leaderboard': html = await pageLeaderboard(); break;
-      case 'history': html = await pageHistory(); break;
-      case 'faq': html = await pageFaq(); break;
-      case 'privacy': html = await pagePrivacy(); break;
-      default: html = pageNotFound();
-    }
+    html = await buildPageHtml();
   }catch(err){
     console.error(err);
     html = `<div class="wrap section page-fade"><div class="empty">Có lỗi khi tải dữ liệu: ${esc(err.message)}<br><span class="field hint">Kiểm tra lại cấu hình trong js/firebase-config.js, và đảm bảo đã bật Firestore + áp dụng đúng Security Rules.</span></div></div>`;
@@ -194,6 +235,50 @@ async function renderPage(){
   updateStickyCta();
 }
 
+// Cập nhật trang theo kiểu "tự nhiên, nhẹ nhàng" — so sánh HTML mới với DOM cũ,
+// CHỈ thay thế những section thực sự thay đổi; phần không đổi giữ nguyên tuyệt đối
+// (ảnh không tải lại, vị trí cuộn không nhảy, input không mất trạng thái).
+// Section được thay sẽ có hiệu ứng fade nhẹ giống skeleton thay vì nhấp nháy cả trang.
+async function renderPageSmooth(){
+  const app = document.getElementById('app');
+  if(!app) return false;
+  let html = '';
+  try{
+    html = await buildPageHtml();
+  }catch(err){
+    console.error(err);
+    html = `<div class="wrap section page-fade"><div class="empty">Có lỗi khi tải dữ liệu: ${esc(err.message)}</div></div>`;
+  }
+
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+
+  const oldChildren = Array.from(app.children);
+  const newChildren = Array.from(temp.children);
+
+  let changed = false;
+  const maxLen = Math.max(oldChildren.length, newChildren.length);
+  for(let i = 0; i < maxLen; i++){
+    const oldEl = oldChildren[i];
+    const newEl = newChildren[i];
+    // Giống hệt nhau → để nguyên, không đụng vào
+    if(oldEl && newEl && oldEl.outerHTML === newEl.outerHTML) continue;
+    changed = true;
+    if(!newEl){ oldEl.remove(); continue; }
+    if(!oldEl){ newEl.classList.add('section-fade-in'); app.appendChild(newEl); continue; }
+    // Khác nhau → thay đúng section đó, kèm fade nhẹ
+    newEl.classList.add('section-fade-in');
+    oldEl.replaceWith(newEl);
+  }
+
+  if(changed){
+    if(state.route.page==='sell') renderThumbs();
+    if(state.route.page==='home') runHeroCountUp();
+    updateStickyCta();
+  }
+  return changed;
+}
+
 // Thanh CTA dính đáy màn hình trên di động — ẩn khi đang ở trang Đăng bán
 // (vì lúc đó nút "Đăng bán ngay" không còn ý nghĩa).
 function updateStickyCta(){
@@ -202,7 +287,23 @@ function updateStickyCta(){
   el.classList.toggle('show', state.route.page !== 'sell');
 }
 
+function toggleDarkMode(){
+  state.darkMode = !state.darkMode;
+  if(state.darkMode){
+    document.body.classList.add('dark-mode');
+    localStorage.setItem('hpulm-theme', 'dark');
+  } else {
+    document.body.classList.remove('dark-mode');
+    localStorage.setItem('hpulm-theme', 'light');
+  }
+}
+
+// Khởi tạo dark mode từ localStorage khi tải trang
+function initDarkMode(){
+  if(state.darkMode) document.body.classList.add('dark-mode');
+}
+
 export {
-  nav, render, requireLogin, goSell, goMyListings, goOrders, toggleNotif,
-  notifClick, parseRouteFromLocation
+  nav, render, renderHeader, renderPage, renderPageSmooth, requireLogin, goSell, goMyListings, goOrders, toggleNotif,
+  notifClick, parseRouteFromLocation, toggleDarkMode, initDarkMode
 };

@@ -6,6 +6,7 @@ import { emailjsConfig } from './firebase-config.js';
 
 let ready = false;
 let adminReady = false;
+let resetReady = false;
 
 export function initEmail(){
   if(!emailjsConfig.publicKey || !emailjsConfig.serviceId){
@@ -19,6 +20,7 @@ export function initEmail(){
   emailjs.init({ publicKey: emailjsConfig.publicKey });
   ready = !!emailjsConfig.templateId;
   adminReady = !!emailjsConfig.adminTemplateId;
+  resetReady = !!emailjsConfig.resetTemplateId;
 }
 
 // templateParams nên khớp với các biến {{...}} bạn đặt trong template EmailJS.
@@ -46,6 +48,41 @@ export async function sendAdminNewListingEmail(templateParams){
     return { sent: true };
   }catch(err){
     console.error('[EmailJS] Gửi email cho admin thất bại:', err);
+    return { sent: false, error: err };
+  }
+}
+
+export async function sendPasswordResetCodeEmail(templateParams){
+  const useResetPublicKey = emailjsConfig.resetPublicKey || emailjsConfig.publicKey;
+  const useResetServiceId = emailjsConfig.resetServiceId || emailjsConfig.serviceId;
+  const useResetTemplateId = emailjsConfig.resetTemplateId || emailjsConfig.templateId;
+
+  if(!emailjsConfig.resetTemplateId && !emailjsConfig.templateId) return { skipped: true };
+
+  try{
+    emailjs.init({ publicKey: useResetPublicKey });
+    await emailjs.send(useResetServiceId, useResetTemplateId, templateParams);
+    return { sent: true };
+  }catch(err){
+    console.error('[EmailJS] Gửi email mã xác thực thất bại:', err);
+    return { sent: false, error: err };
+  }
+}
+
+// Gửi mã xác nhận xóa tài khoản qua EmailJS
+export async function sendDeleteAccountCodeEmail(templateParams){
+  const useResetPublicKey = emailjsConfig.resetPublicKey || emailjsConfig.publicKey;
+  const useResetServiceId = emailjsConfig.resetServiceId || emailjsConfig.serviceId;
+  const useResetTemplateId = emailjsConfig.resetTemplateId || emailjsConfig.templateId;
+
+  if(!emailjsConfig.resetTemplateId && !emailjsConfig.templateId) return { skipped: true };
+
+  try{
+    emailjs.init({ publicKey: useResetPublicKey });
+    await emailjs.send(useResetServiceId, useResetTemplateId, templateParams);
+    return { sent: true };
+  }catch(err){
+    console.error('[EmailJS] Gửi email xác nhận xóa tài khoản thất bại:', err);
     return { sent: false, error: err };
   }
 }

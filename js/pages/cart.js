@@ -11,8 +11,11 @@ import { render, requireLogin } from '../router.js';
 async function pageCart(){
   setPageTitle('Giỏ hàng');
   if(!state.currentUser) return `<div class="wrap section page-fade"><div class="empty">Vui lòng đăng nhập để xem giỏ hàng.</div></div>`;
+  // Dùng state.products (realtime) — chỉ hiện sản phẩm CÒN TỒN TẠI trong giỏ.
+  // ID của sản phẩm đã bị xóa/gỡ sẽ tự được loại bỏ (và được renderHeader dọn dẹp).
   const ids = state.currentUser.cart||[];
-  const items = (await Promise.all(ids.map(id=>fetchDoc('products',id)))).filter(Boolean);
+  const productMap = new Map((state.products || []).map(p => [p.id, p]));
+  const items = ids.map(id => productMap.get(id)).filter(Boolean);
   return `<div class="wrap section page-fade">
     ${renderBreadcrumbs([{label:'Trang chủ', page:'home'}, {label:'Giỏ hàng'}])}
     <h2>Giỏ hàng (${items.length})</h2>

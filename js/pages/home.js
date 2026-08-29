@@ -1,17 +1,20 @@
 // ============================================================
 // Trang chủ: danh sách sản phẩm, tìm kiếm & lọc. "filters" là state riêng
 // của trang này — không cần chia sẻ với file khác.
+// Sản phẩm lấy từ state.products (được realtime.js cập nhật liên tục),
+// nên khi có tin mới/được duyệt, trang tự cập nhật mà không cần reload.
 // ============================================================
-import { STATUS_LABEL, STATUS_CLASS } from '../state.js';
+import { state, STATUS_LABEL, STATUS_CLASS } from '../state.js';
 import { esc, fmtVND, sortDesc, buildUsersById, statsFromUser, setPageTitle } from '../helpers.js';
 import { fetchAll } from '../firestore-helpers.js';
 import { render } from '../router.js';
 
-let filters = { q:'', brand:'', min:'', max:'', condition:'', showSold:false };
+let filters = { q:'', brand:'', min:'', max:'', condition:'', showSold:false, sort:'newest' };
 
 async function pageHome(){
   setPageTitle();
-  const [products, users] = await Promise.all([ fetchAll('products'), fetchAll('users') ]);
+  const products = state.products || [];
+  const users = await fetchAll('users');
   const usersById = buildUsersById(users);
   const totalCompletedDeals = users.reduce((a,u)=>a+(u.dealsCompleted||0),0);
 
@@ -21,7 +24,12 @@ async function pageHome(){
   if(filters.min){ list = list.filter(p=>p.price>=Number(filters.min)); }
   if(filters.max){ list = list.filter(p=>p.price<=Number(filters.max)); }
   if(filters.condition){ list = list.filter(p=>p.condition===filters.condition); }
-  list = sortDesc(list);
+  // Sắp xếp theo lựa chọn của người dùng
+  const sort = filters.sort || 'newest';
+  if(sort === 'price-asc'){ list = list.slice().sort((a,b)=>a.price-b.price); }
+  else if(sort === 'price-desc'){ list = list.slice().sort((a,b)=>b.price-a.price); }
+  else if(sort === 'title-asc'){ list = list.slice().sort((a,b)=>(a.title||'').localeCompare(b.title||'', 'vi')); }
+  else { list = sortDesc(list); } // newest (mặc định)
 
   const brands = [...new Set(products.map(p=>p.brand))].sort();
   const conditions = [...new Set(products.map(p=>p.condition))];
@@ -47,7 +55,14 @@ async function pageHome(){
         <div class="field"><label>Hãng</label><select class="select" onchange="setFilter('brand',this.value)"><option value="">Tất cả</option>${brands.map(b=>`<option value="${esc(b)}" ${filters.brand===b?'selected':''}>${esc(b)}</option>`).join('')}</select></div>
         <div class="field"><label>Giá từ</label><input class="input" type="number" value="${esc(filters.min)}" oninput="setFilter('min',this.value)" placeholder="vd: 5000000"></div>
         <div class="field"><label>Giá đến</label><input class="input" type="number" value="${esc(filters.max)}" oninput="setFilter('max',this.value)" placeholder="vd: 15000000"></div>
-        <div class="field"><button class="btn btn-primary btn-block" onclick="render()">Lọc</button></div>
+        <div class="field"><label>Sắp xếp</label>
+          <select class="select" onchange="setFilter('sort',this.value);render()">
+            <option value="newest" ${filters.sort==='newest'?'selected':''}>Mới nhất</option>
+            <option value="price-asc" ${filters.sort==='price-asc'?'selected':''}>Giá thấp → cao</option>
+            <option value="price-desc" ${filters.sort==='price-desc'?'selected':''}>Giá cao → thấp</option>
+            <option value="title-asc" ${filters.sort==='title-asc'?'selected':''}>Tên A → Z</option>
+          </select>
+        </div>
       </div>
       <div class="check-row" style="margin-top:12px;">
         <select class="select" style="width:auto;" onchange="setFilter('condition',this.value);render()">
@@ -88,6 +103,6 @@ function productCard(p, usersById){
 
 function setFilter(key, val){ filters[key] = val; }
 
-function resetFilters(){ filters = {q:'',brand:'',min:'',max:'',condition:'',showSold:false}; render(); }
+function resetFilters(){ filters = {q:'',brand:'',min:'',max:'',condition:'',showSold:false,sort:'newest'}; render(); }
 
 export { pageHome, productCard, setFilter, resetFilters };

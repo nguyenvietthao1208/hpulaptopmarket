@@ -56,6 +56,31 @@
 <body>
 <div id="toast-region"></div>
 <button id="back-to-top" class="back-to-top" title="Lên đầu trang" onclick="scrollToTop()">↑</button>
+
+<!-- Nút liên hệ Admin nổi (góc dưới bên phải) -->
+<div id="contact-fab" class="contact-fab">
+  <div class="contact-panel" id="contact-panel">
+    <div class="contact-panel-head">Liên hệ Admin</div>
+    <a href="tel:0794105811" class="contact-item">
+      <span class="contact-icon">📞</span>
+      <span><strong>Điện thoại / Zalo</strong><br>0794105811</span>
+    </a>
+    <a href="mailto:nguyenvietthao1208@gmail.com" class="contact-item">
+      <span class="contact-icon">✉️</span>
+      <span><strong>Email</strong><br>nguyenvietthao1208@gmail.com</span>
+    </a>
+    <a href="https://owls-five.vercel.app/" target="_blank" rel="noopener" class="contact-item">
+      <span class="contact-icon">💬</span>
+      <span><strong>Discord</strong><br>owls-five.vercel.app</span>
+    </a>
+    <a href="https://www.facebook.com/nguyenvietthao1208" target="_blank" rel="noopener" class="contact-item">
+      <span class="contact-icon">📘</span>
+      <span><strong>Facebook</strong><br>nguyenvietthao1208</span>
+    </a>
+  </div>
+  <button class="contact-fab-btn" onclick="toggleContactPanel()" title="Liên hệ Admin" aria-label="Liên hệ Admin">💬</button>
+</div>
+
 <header class="topbar"><div class="topbar-inner" id="header-root"></div></header>
 <main id="app"><div class="loading-block">Đang kết nối Firebase...</div></main>
 <div id="modal-root"></div>

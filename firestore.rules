@@ -83,6 +83,13 @@ service cloud.firestore {
       allow read, update: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn();
     }
-  }
-}
+
+    // Lịch sử gỡ bài / từ chối — admin ghi, mọi người đã đăng nhập đọc được
+    // (dữ liệu không nhạy cảm: tên sản phẩm, giá, lý do gỡ, tên admin/seller).
+    // Cho phép đọc toàn bộ để admin xem được tất cả lịch sử (query không filter),
+    // còn người bán chỉ xem được của mình qua filter sellerId.
+    match /productHistory/{id} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin();
+    }
 

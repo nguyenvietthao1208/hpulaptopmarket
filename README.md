@@ -206,6 +206,17 @@ thanh điều hướng, giờ bấm vào được để đi thẳng tới trang 
   trong app) — xem hướng dẫn thiết lập template thứ 2 ở Bước 6.
 - **Đường viền/khung/ô nhập liệu rõ hơn**: tăng độ tương phản viền để giao diện dễ nhìn,
   dễ phân biệt các vùng nhập liệu hơn.
+- **Dashboard quản trị** (`#/admin?tab=analytics`): thống kê tổng tin đăng, doanh thu,
+  tài khoản hoạt động, điểm đánh giá trung bình, phân bổ trạng thái tin đăng, giao dịch
+  mới nhất, top người bán và nhận xét gần đây.
+- **Lịch sử gỡ bài** (`#/removed`): người bán xem được danh sách các tin đã bị admin gỡ
+  kèm lý do, thời gian và tên admin — truy cập từ nút "Lịch sử gỡ bài" trên trang
+  "Tin đăng của tôi".
+- **Cập nhật realtime**: trang tự động cập nhật khi có thay đổi dữ liệu trong Firestore
+  (sản phẩm, thông báo, đơn hàng) thông qua `onSnapshot` — không cần tải lại trang thủ công.
+- **Quên mật khẩu có mã xác thực**: thay vì chỉ gửi email reset link, hệ thống gửi mã
+  OTP 4 chữ số qua EmailJS để xác thực trước khi cho đổi mật khẩu (an toàn hơn, không
+  cần Cloud Functions).
 
 **Việc bạn cần làm sau khi tải bản này**: dán lại `firestore.rules` mới vào Firebase
 Console → Firestore Database → Rules → Publish (rules mới thêm quyền cho admin xóa tin

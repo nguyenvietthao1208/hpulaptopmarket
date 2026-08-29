@@ -12,10 +12,12 @@ import { render } from '../router.js';
 async function pageMyListings(){
   setPageTitle('Tin đăng của tôi');
   if(!state.currentUser) return `<div class="wrap section page-fade"><div class="empty">Vui lòng đăng nhập.</div></div>`;
-  const mine = sortDesc(await fetchWhere('products','sellerId','==',state.currentUser.uid));
+  // Dùng state.products (được realtime.js cập nhật liên tục) — trang tự cập nhật
+  // tức thì khi tin đăng của bạn thay đổi (được duyệt, bị gỡ, có người đặt...).
+  const mine = sortDesc((state.products || []).filter(p => p.sellerId === state.currentUser.uid));
   return `<div class="wrap section page-fade">
     ${renderBreadcrumbs([{label:'Trang chủ', page:'home'}, {label:'Tin đăng của tôi'}])}
-    <div class="section-head"><h2>Tin đăng của tôi</h2><button class="btn btn-primary btn-sm" onclick="goSell()">+ Đăng bán mới</button></div>
+    <div class="section-head"><h2>Tin đăng của tôi</h2><div style="display:flex;gap:8px;flex-wrap:wrap;"><a href="#" class="btn btn-ghost btn-sm" onclick="nav('removed');return false;">Lịch sử gỡ bài</a><button class="btn btn-primary btn-sm" onclick="goSell()">+ Đăng bán mới</button></div></div>
     ${mine.length? mine.map(p=>`
       <div class="order-card">
         <div class="order-top">

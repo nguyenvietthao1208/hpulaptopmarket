@@ -111,13 +111,15 @@ async function submitListing(e){
       contactPhone:f.get('phone').trim(), contactZone:f.get('zone').trim(),
       images, status:'pending', createdAt: serverTimestamp()
     };
-    await addDoc(collection(db,'products'), data);
+    const createdDoc = await addDoc(collection(db,'products'), data);
+    const productUrl = `${window.location.origin}${window.location.pathname}#/product?id=${createdDoc.id}`;
     const admins = await fetchWhere('users','role','==','admin');
     await Promise.all(admins.map(a=> notifyUser(a.id,'Có tin đăng mới cần duyệt', `"${data.title}" vừa được đăng bởi ${state.currentUser.name}, đang chờ bạn kiểm duyệt.`, {page:'admin', params:{tab:'pending'}})));
     await Promise.all(admins.filter(a=>a.email).map(a=> sendAdminNewListingEmail({
       to_email: a.email, to_name: a.name,
       product_title: data.title, seller_name: state.currentUser.name,
-      seller_phone: data.contactPhone, listing_price: fmtVND(data.price)
+      seller_phone: data.contactPhone, listing_price: fmtVND(data.price),
+      listing_link: productUrl
     })));
     pendingImageFiles = [];
     toast('Đã gửi tin đăng, chờ quản trị viên duyệt.','success');

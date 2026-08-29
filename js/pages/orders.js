@@ -17,10 +17,13 @@ async function pageOrders(){
   setPageTitle('Đơn hàng');
   if(!state.currentUser) return `<div class="wrap section page-fade"><div class="empty">Vui lòng đăng nhập.</div></div>`;
   const tab = state.route.params.tab || 'buy';
-  const [list, ratings] = await Promise.all([
-    tab==='buy' ? fetchWhere('orders','buyerId','==',state.currentUser.uid) : fetchWhere('orders','sellerId','==',state.currentUser.uid),
-    fetchAll('ratings')
-  ]);
+  // Dùng state.userOrders (được realtime.js cập nhật liên tục cho CẢ vai trò
+  // người mua và người bán) — trang tự cập nhật tức thì khi đơn thay đổi.
+  const allOrders = state.userOrders || [];
+  const list = tab==='buy'
+    ? allOrders.filter(o => o.buyerId === state.currentUser.uid)
+    : allOrders.filter(o => o.sellerId === state.currentUser.uid);
+  const ratings = await fetchAll('ratings');
   const sorted = sortDesc(list);
   return `<div class="wrap section page-fade">
     ${renderBreadcrumbs([{label:'Trang chủ', page:'home'}, {label:'Đơn hàng'}])}
