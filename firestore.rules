@@ -28,7 +28,7 @@ service cloud.firestore {
             && request.resource.data.ratingCount == resource.data.get('ratingCount', 0) + 1
             && request.resource.data.ratingSum >= resource.data.get('ratingSum', 0) + 1
             && request.resource.data.ratingSum <= resource.data.get('ratingSum', 0) + 5);
-      allow delete: if false;
+      allow delete: if isOwner(uid) || isAdmin();
     }
 
     // Tin đăng laptop.
