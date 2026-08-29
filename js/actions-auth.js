@@ -15,7 +15,7 @@ import { db } from './firebase-init.js';
 import { toast, mapAuthError } from './helpers.js';
 import { closeModalsAndRefresh, openAuth, showNotification } from './modals.js';
 import { fetchWhere } from './firestore-helpers.js';
-import { sendPasswordResetCodeEmail } from './email.js';
+import { sendPasswordResetCodeEmail, sendDeleteAccountCodeEmail } from './email.js';
 import { nav } from './router.js';
 
 function getResetSession(){
