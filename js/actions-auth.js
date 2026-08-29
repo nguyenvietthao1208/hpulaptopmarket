@@ -13,7 +13,7 @@ import { appDomain } from './firebase-config.js';
 import { doc, setDoc, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { db } from './firebase-init.js';
 import { toast, mapAuthError } from './helpers.js';
-import { closeModalsAndRefresh, openAuth, showNotification } from './modals.js';
+import { closeModalsAndRefresh, openAuth, showNotification, closeDeleteAccountModal } from './modals.js';
 import { fetchWhere } from './firestore-helpers.js';
 import { sendPasswordResetCodeEmail, sendDeleteAccountCodeEmail } from './email.js';
 import { nav } from './router.js';
@@ -392,6 +392,7 @@ async function submitDeleteAccountStep2(e){
     sessionStorage.removeItem('hpu_delete_account_code');
     sessionStorage.removeItem('hpu_delete_account_email');
 
+    closeDeleteAccountModal();
     toast('Tài khoản đã được xóa vĩnh viễn.', 'success');
     await nav('home');
   }catch(err){
