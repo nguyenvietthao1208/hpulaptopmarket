@@ -39,6 +39,7 @@ async function pageProduct(id){
           <tr><td>RAM</td><td>${esc(p.ram)}</td></tr>
           <tr><td>Ổ lưu trữ</td><td>${esc(p.storage)}</td></tr>
           <tr><td>Màn hình</td><td>${esc(p.screen)}</td></tr>
+          <tr><td>GPU</td><td>${esc(p.gpu || 'Không có')}</td></tr>
           <tr><td>Tình trạng</td><td>${esc(p.condition)}</td></tr>
           <tr><td>Khu vực</td><td>${esc(p.contactZone||'—')}</td></tr>
         </table>

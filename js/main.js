@@ -17,7 +17,9 @@ import { listenToProducts, listenToUserNotifications, listenToUserOrders, stopAl
 import {
   openAuth, closeAuth, openCheckout, closeCheckout,
   rejectProductPrompt, closeRejectModal, openRating, closeRatingModal, setRatingStars,
-  cancelOrderPrompt, closeCancelModal, openDeleteProductModal, closeDeleteProductModal
+  cancelOrderPrompt, closeCancelModal, openDeleteProductModal, closeDeleteProductModal,
+  openDeleteAccountModal, closeDeleteAccountModal, showNotification, closeNotification,
+  renderModals, closeModalsAndRefresh
 } from './modals.js';
 
 import { submitRegister, submitLogin, submitForgotPassword, submitForgotPasswordVerify, forgotCurrentPassword, signInGoogle, logout, submitDeleteAccountStep1, submitDeleteAccountStep2 } from './actions-auth.js';
@@ -63,33 +65,16 @@ onAuthStateChanged(auth, async (fbUser) => {
       notifListenerReady = false; // reset cờ cho phiên đăng nhập mới
       seenNotifIds.clear(); // reset danh sách ID đã thấy
       
-      // Khởi tạo real-time listeners cho user này.
-      // Mọi thay đổi dữ liệu → cập nhật state + header + render lại trang hiện tại
-      // MỘT CÁCH MƯỢT (không skeleton, không scroll) — mọi trang/tab luôn mới nhất
-      // theo thời gian thực, không chậm 1 giây nào.
-      listenToProducts(() => {
-        refreshCurrentPage();
-      });
+      // Listeners chỉ cho user đã đăng nhập (thông báo, đơn hàng)
       listenToUserNotifications(fbUser.uid, (notifications) => {
-        // Hiện popup cho TẤT CẢ thông báo MỚI (chưa đọc) khi người dùng đang
-        // đăng nhập. Dùng Set ID để phát hiện thông báo mới — tránh lỗi so
-        // sánh số lượng (state.notifications bị realtime.js cập nhật trước
-        // khi callback chạy, khiến so sánh số lượng luôn bằng nhau).
         const isFirstSnapshot = !notifListenerReady;
-        
-        // Tìm các thông báo CHƯA từng thấy trước đây
         const freshNotifs = notifications.filter(n => !seenNotifIds.has(n.id));
-        
         if(!isFirstSnapshot){
-          // Chỉ popup cho thông báo mới CHƯA ĐỌC
           freshNotifs.filter(n => !n.read).forEach(n => showNotifPopup(n));
         }
-        
-        // Ghi nhận tất cả ID đã thấy (cả snapshot đầu tiên)
         notifications.forEach(n => seenNotifIds.add(n.id));
         notifListenerReady = true;
         state.notifications = notifications;
-        // Cập nhật header (số thông báo) + trang hiện tại (vd: đang mở panel thông báo)
         renderHeader();
         refreshCurrentPage();
       });
@@ -102,12 +87,22 @@ onAuthStateChanged(auth, async (fbUser) => {
       state.notifications = [];
       state.userOrders = [];
       stopAllListeners();
+      listenToProducts(() => {
+        refreshCurrentPage();
+      });
     }
   } catch (err) {
     console.error('Lỗi tải hồ sơ người dùng:', err);
     toast('Không tải được hồ sơ người dùng: ' + err.message, 'error');
   }
   await render();
+});
+
+// Listener sản phẩm LUÔN chạy (không phụ thuộc đăng nhập) — cả khách và user
+// đã đăng nhập đều thấy sản phẩm. Khi có tin mới/được duyệt/gỡ → trang chủ
+// tự cập nhật realtime.
+listenToProducts(() => {
+  refreshCurrentPage();
 });
 
 /* ============ Kiểm tra người dùng có đang gõ/chọn trong form không ============ */
@@ -219,12 +214,14 @@ Object.assign(window, {
   openAuth, closeAuth, openCheckout, closeCheckout,
   rejectProductPrompt, closeRejectModal, openRating, closeRatingModal, setRatingStars,
   cancelOrderPrompt, closeCancelModal, openDeleteProductModal, closeDeleteProductModal,
+  openDeleteAccountModal, closeDeleteAccountModal, showNotification, closeNotification,
+  renderModals, closeModalsAndRefresh,
   submitRegister, submitLogin, submitForgotPassword, submitForgotPasswordVerify, forgotCurrentPassword, signInGoogle, logout,
   submitListing, deleteListing, approveProduct, submitReject, submitDeleteProduct,
   onImagesSelected, removeImage,
   addToCart, removeFromCart, submitOrder,
   sellerConfirm, sellerShip, buyerConfirmReceived, submitCancel, submitRating, submitComment,
-  render, setFilter, resetFilters,
+  render, renderPageSmooth, setFilter, resetFilters,
   scrollToTop, copyText,
   adminDeleteProduct, notifClick, onAvatarSelected, onLeaderboardSearchInput, submitProfile, submitChangePassword,
   toggleFaq, toggleDarkMode, toggleContactPanel, notifClickFromPopup,

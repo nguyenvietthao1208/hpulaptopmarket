@@ -25,9 +25,10 @@ const activeListeners = {};
 export function listenToProducts(callback) {
   if (activeListeners.products) activeListeners.products();
   
-  const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+  // KHÔNG dùng orderBy ở đây (cần Firestore index). Sắp xếp phía client.
+  const q = query(collection(db, 'products'));
   activeListeners.products = onSnapshot(q, (snapshot) => {
-    const products = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    const products = sortDescByCreatedAt(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
     state.products = products;
     if (callback) callback(products);
   }, (error) => console.error('Products listener error:', error));
@@ -115,14 +116,14 @@ export function listenToProductHistory(productId, callback) {
   }, (error) => console.error('Product history listener error:', error));
 }
 
-// Dừng tất cả listeners (gọi khi logout hoặc unmount)
+// Dừng chỉ các listener phụ thuộc auth (thông báo, đơn hàng...).
+// Listener sản phẩm phải luôn ở trên để guest users vẫn thấy danh sách hàng.
 export function stopAllListeners() {
-  Object.values(activeListeners).forEach(unsubscribe => {
+  Object.entries(activeListeners).forEach(([key, unsubscribe]) => {
+    if (key === 'products' || key === 'productHistory') return;
     if (unsubscribe) unsubscribe();
-  });
-  Object.keys(activeListeners).forEach(key => {
     activeListeners[key] = null;
   });
   state.userOrders = [];
-  state.products = [];
+  state.notifications = [];
 }

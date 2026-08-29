@@ -36,6 +36,7 @@ async function pageSell(){
         <div class="field"><label>Ổ lưu trữ *</label><input class="input" name="storage" required placeholder="vd: 512GB SSD"></div>
         <div class="field"><label>Màn hình *</label><input class="input" name="screen" required placeholder="vd: 14 inch FHD"></div>
       </div>
+      <div class="field"><label>GPU (tùy chọn)</label><input class="input" name="gpu" placeholder="vd: Intel Iris Xe / NVIDIA RTX 3050 / AMD Radeon"></div>
       <div class="field"><label>Tình trạng máy *</label>
         <select class="select" name="condition" required>
           <option value="">— Chọn tình trạng —</option>
@@ -107,6 +108,7 @@ async function submitListing(e){
       sellerId: state.currentUser.uid, sellerName: state.currentUser.name,
       title:f.get('title').trim(), brand:f.get('brand').trim(), price:Number(f.get('price')),
       cpu:f.get('cpu').trim(), ram:f.get('ram').trim(), storage:f.get('storage').trim(), screen:f.get('screen').trim(),
+      gpu:(f.get('gpu') || '').trim() || null,
       condition:f.get('condition'), description:f.get('description').trim(),
       contactPhone:f.get('phone').trim(), contactZone:f.get('zone').trim(),
       images, status:'pending', createdAt: serverTimestamp()

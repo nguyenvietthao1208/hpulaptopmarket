@@ -25,6 +25,7 @@ import { pagePrivacy } from './pages/privacy.js';
 import { pageNotFound } from './pages/notfound.js';
 
 let notifOpen = false;
+let mobileNavOpen = false;
 let headerNotifCache = [];
 
 function encodeRoute(page, params){
@@ -50,6 +51,7 @@ async function nav(page, params){
 }
 
 window.addEventListener('popstate', ()=>{ state.route = parseRouteFromLocation(); render(); trackPageView(location.hash); });
+window.toggleMobileNav = toggleMobileNav;
 
 // Google Analytics (GA4) không tự theo dõi chuyển trang trong SPA (chỉ theo dõi lần
 // tải trang đầu tiên), nên cần gửi sự kiện page_view thủ công mỗi khi đổi route.
@@ -85,13 +87,25 @@ async function toggleNotif(){
   await renderHeader();
 }
 
+function toggleMobileNav(force){
+  const next = typeof force === 'boolean' ? force : !mobileNavOpen;
+  mobileNavOpen = next;
+  renderHeader();
+}
+
 // Đóng panel thông báo khi bấm ra ngoài vùng panel/nút thông báo
 document.addEventListener('click', (e) => {
-  if(!notifOpen) return;
-  const wrap = document.querySelector('.notif-wrap');
-  if(!wrap) return;
-  if(!wrap.contains(e.target)){
+  const notifWrap = document.querySelector('.notif-wrap');
+  const mobileToggle = document.querySelector('.mobile-nav-toggle');
+  const mobileSheet = document.querySelector('.mobile-nav-sheet');
+
+  if(notifOpen && notifWrap && !notifWrap.contains(e.target)){ 
     notifOpen = false;
+    renderHeader();
+  }
+
+  if(mobileNavOpen && mobileToggle && !mobileToggle.contains(e.target) && mobileSheet && !mobileSheet.contains(e.target)){
+    mobileNavOpen = false;
     renderHeader();
   }
 });
@@ -117,28 +131,28 @@ async function renderHeader(){
   } else {
     headerNotifCache = [];
   }
+  const navItems = `
+    <a class="nav-link ${state.route.page==='home'?'active':''}" href="#" onclick="nav('home');return false;">Trang chủ</a>
+    <a class="nav-link ${state.route.page==='sell'?'active':''}" href="#" onclick="goSell();return false;">Đăng bán</a>
+    <a class="nav-link ${state.route.page==='mylistings'?'active':''}" href="#" onclick="goMyListings();return false;">Tin đăng của tôi</a>
+    <a class="nav-link ${state.route.page==='orders'?'active':''}" href="#" onclick="goOrders();return false;">Đơn hàng</a>
+    <a class="nav-link ${state.route.page==='leaderboard'?'active':''}" href="#" onclick="nav('leaderboard');return false;">Xếp hạng</a>
+    <a class="nav-link ${state.route.page==='history'?'active':''}" href="#" onclick="nav('history');return false;">Đã hoàn tất</a>
+    ${state.currentUser && state.currentUser.role==='admin' ? `<a class="nav-link ${state.route.page==='admin'?'active':''}" href="#" onclick="nav('admin');return false;">Quản trị</a>` : ''}
+  `;
+
   root.innerHTML = `
     <a href="#" class="brand" onclick="nav('home');return false;">
       <span class="brand-mark"></span>
       <span class="brand-name">HPU <b>LM</b></span>
     </a>
-    <nav class="nav-links">
-      <a class="nav-link ${state.route.page==='home'?'active':''}" href="#" onclick="nav('home');return false;">Trang chủ</a>
-      <a class="nav-link ${state.route.page==='sell'?'active':''}" href="#" onclick="goSell();return false;">Đăng bán</a>
-      <a class="nav-link ${state.route.page==='mylistings'?'active':''}" href="#" onclick="goMyListings();return false;">Tin đăng của tôi</a>
-      <a class="nav-link ${state.route.page==='orders'?'active':''}" href="#" onclick="goOrders();return false;">Đơn hàng</a>
-      <a class="nav-link ${state.route.page==='leaderboard'?'active':''}" href="#" onclick="nav('leaderboard');return false;">Xếp hạng</a>
-      <a class="nav-link ${state.route.page==='history'?'active':''}" href="#" onclick="nav('history');return false;">Đã hoàn tất</a>
-      ${state.currentUser && state.currentUser.role==='admin' ? `<a class="nav-link ${state.route.page==='admin'?'active':''}" href="#" onclick="nav('admin');return false;">Quản trị</a>` : ''}
-    </nav>
+    <button class="mobile-nav-toggle ${mobileNavOpen?'open':''}" type="button" aria-label="Mở menu" onclick="toggleMobileNav()">${mobileNavOpen ? '✕' : '☰'}</button>
+    <nav class="nav-links">${navItems}</nav>
     <div class="topbar-right">
-      <button class="btn btn-ghost btn-sm" onclick="toggleDarkMode()" title="Chuyển đổi Dark/Light Mode">${state.darkMode ? '☀️' : '🌙'}</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleDarkMode()" title="Chuyển đổi Dark/Light Mode" aria-label="Chuyển đổi Dark/Light Mode">${state.darkMode ? '☀' : '☾'}</button>
       <a href="#" class="nav-link" onclick="nav('cart');return false;">Giỏ hàng${cartCount?`<span class="count-pill">${cartCount}</span>`:''}</a>
       ${state.currentUser?`
       <div class="notif-wrap">
-        <!-- stopPropagation: chặn sự kiện click nổi bọt lên document — nếu không,
-             listener "đóng khi bấm ra ngoài" sẽ thấy target đã bị xóa khỏi DOM
-             (do renderHeader thay DOM) và đóng panel ngay sau khi vừa mở. -->
         <a href="#" class="nav-link" onclick="event.stopPropagation();toggleNotif();return false;">Thông báo${unread?`<span class="count-pill">${unread}</span>`:''}</a>
         ${notifOpen?renderNotifPanel():''}
       </div>
@@ -152,6 +166,7 @@ async function renderHeader(){
       <button class="btn btn-primary btn-sm" onclick="openAuth('register')">Đăng ký</button>
       `}
     </div>
+    <div class="mobile-nav-sheet ${mobileNavOpen?'open':''}">${navItems}</div>
   `;
 }
 
@@ -261,14 +276,23 @@ async function renderPageSmooth(){
   for(let i = 0; i < maxLen; i++){
     const oldEl = oldChildren[i];
     const newEl = newChildren[i];
-    // Giống hệt nhau → để nguyên, không đụng vào
     if(oldEl && newEl && oldEl.outerHTML === newEl.outerHTML) continue;
     changed = true;
-    if(!newEl){ oldEl.remove(); continue; }
-    if(!oldEl){ newEl.classList.add('section-fade-in'); app.appendChild(newEl); continue; }
-    // Khác nhau → thay đúng section đó, kèm fade nhẹ
+    if(!newEl){
+      oldEl.classList.add('section-fade-out');
+      setTimeout(() => oldEl.remove(), 220);
+      continue;
+    }
+    if(!oldEl){
+      newEl.classList.add('section-fade-in');
+      app.appendChild(newEl);
+      continue;
+    }
+
     newEl.classList.add('section-fade-in');
-    oldEl.replaceWith(newEl);
+    oldEl.classList.add('section-fade-out');
+    app.insertBefore(newEl, oldEl.nextSibling || null);
+    setTimeout(() => oldEl.remove(), 220);
   }
 
   if(changed){

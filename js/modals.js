@@ -15,6 +15,7 @@ let ratingStars = 5;
 let cancelModalId = null;
 let notificationMessage = null;
 let deleteProductModalId = null;
+let deleteAccountModalOpen = false; // chỉ render modal khi = true
 let deleteAccountStep = 0; // 0: nhập mật khẩu, 1: nhập mã xác nhận
 let deleteAccountCode = '';
 
@@ -50,9 +51,9 @@ function openDeleteProductModal(id){ deleteProductModalId=id; renderModals(); }
 
 function closeDeleteProductModal(){ deleteProductModalId=null; renderModals(); }
 
-function openDeleteAccountModal(){ deleteAccountStep=0; deleteAccountCode=''; renderModals(); }
+function openDeleteAccountModal(){ deleteAccountModalOpen=true; deleteAccountStep=0; deleteAccountCode=''; renderModals(); }
 
-function closeDeleteAccountModal(){ deleteAccountStep=0; deleteAccountCode=''; renderModals(); }
+function closeDeleteAccountModal(){ deleteAccountModalOpen=false; deleteAccountStep=0; deleteAccountCode=''; renderModals(); }
 
 function renderAuthModalIfNeeded(){
   if(!authModal) return '';
@@ -198,13 +199,13 @@ function renderDeleteProductModalIfNeeded(){
 }
 
 function renderDeleteAccountModalIfNeeded(){
-  if(deleteAccountStep === undefined) return '';
+  if(!deleteAccountModalOpen) return ''; // chỉ render khi modal đang mở
   if(deleteAccountStep === 0){
     return `<div class="modal-overlay" onclick="if(event.target===this)closeDeleteAccountModal()">
       <div class="modal">
         <div class="modal-head"><h3>Xóa tài khoản</h3><button class="modal-close" onclick="closeDeleteAccountModal()">×</button></div>
         <div style="background:var(--danger-bg);padding:14px;border-radius:var(--radius);margin-bottom:16px;font-size:13px;color:var(--danger);line-height:1.5;">
-          <strong>⚠️ Cảnh báo:</strong> Bạn sắp xóa vĩnh viễn tài khoản và toàn bộ dữ liệu. Thao tác này <strong>không thể hoàn tác</strong>.
+          <strong>⚠️ Cảnh báo:</strong> Bạn sắp xóa vĩnh viễn tài khoản và toàn bộ dữ liệu. Thao tác này <strong>không thể hoàn tác</strong>. (Nếu bạn chưa có mật khẩu, hãy đăng xuất và thực hiện việc quên mật khẩu)
         </div>
         <form onsubmit="return submitDeleteAccountStep1(event)">
           <div class="field"><label>Nhập mật khẩu để xác nhận *</label><input class="input" type="password" name="password" required placeholder="Nhập mật khẩu hiện tại"></div>
@@ -305,6 +306,8 @@ function handleOtpPaste(event){
 
 async function closeModalsAndRefresh(){
   authModal=null; checkoutModal=null; rejectModalId=null; ratingModalId=null; cancelModalId=null;
+  deleteProductModalId=null; deleteAccountModalOpen=false; deleteAccountStep=0; deleteAccountCode='';
+  notificationMessage=null;
   renderModals();
   await render();
 }
