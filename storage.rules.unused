@@ -1,0 +1,17 @@
+// GHI CHÚ: File này KHÔNG CÒN ĐƯỢC DÙNG trong bản hiện tại.
+// Ứng dụng đang lưu ảnh sản phẩm trực tiếp trong Firestore (dạng ảnh đã nén,
+// base64) để tránh yêu cầu bật gói Blaze của Firebase Storage.
+// Giữ lại file này phòng khi sau này bạn muốn nâng cấp sang Firebase Storage
+// (hoặc Cloudinary) để xử lý ảnh chất lượng cao / số lượng lớn hơn.
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /products/{productId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null;
+    }
+  }
+}

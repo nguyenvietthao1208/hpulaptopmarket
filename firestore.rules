@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    function onlyFields(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
+    // Hồ sơ người dùng — ai cũng đọc được (để hiện trang uy tín người bán),
+    // chỉ chính chủ mới sửa hồ sơ của mình và không được tự đổi role.
+    // Ngoại lệ: BẤT KỲ ai đã đăng nhập cũng được tăng đúng 1 đơn vị vào
+    // dealsCompleted / ratingSum+ratingCount trên hồ sơ NGƯỜI KHÁC — đây là cách
+    // ứng dụng cập nhật điểm uy tín người bán khi có đơn hoàn tất / có đánh giá,
+    // mà không cần đọc trực tiếp collection "orders" riêng tư của người khác.
+    match /users/{uid} {
+      allow read: if true;
+      allow create: if isOwner(uid) && request.resource.data.role == 'user';
+      allow update: if (isOwner(uid) && request.resource.data.role == resource.data.role)
+        || (isSignedIn() && onlyFields(['dealsCompleted'])
+            && request.resource.data.dealsCompleted == resource.data.get('dealsCompleted', 0) + 1)
+        || (isSignedIn() && onlyFields(['ratingSum','ratingCount'])
+            && request.resource.data.ratingCount == resource.data.get('ratingCount', 0) + 1
+            && request.resource.data.ratingSum >= resource.data.get('ratingSum', 0) + 1
+            && request.resource.data.ratingSum <= resource.data.get('ratingSum', 0) + 5);
+      allow delete: if false;
+    }
+
+    // Tin đăng laptop.
+    match /products/{id} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.sellerId == request.auth.uid
+        && request.resource.data.status == 'pending';
+      allow update: if isAdmin()
+        // Chủ tin sửa nội dung khi trạng thái không đổi (không tự duyệt tin của mình).
+        || (isSignedIn() && resource.data.sellerId == request.auth.uid
+            && request.resource.data.status == resource.data.status)
+        // Vòng đời đơn hàng: BẤT KỲ ai đã đăng nhập (người mua hoặc người bán) được đổi
+        // CHỈ field "status" giữa các trạng thái đã-duyệt/đang-đặt/đã-bán — không cho phép
+        // đi từ "pending"/"rejected" (chặn việc né kiểm duyệt) và không đổi được field khác.
+        || (isSignedIn()
+            && resource.data.status in ['approved','reserved']
+            && request.resource.data.status in ['approved','reserved','sold']
+            && onlyFields(['status']));
+      allow delete: if isAdmin()
+        || (isSignedIn()
+            && resource.data.sellerId == request.auth.uid
+            && resource.data.status in ['pending','rejected']);
+    }
+
+    // Đơn hàng — chỉ người mua/người bán liên quan (hoặc admin) được đọc.
+    // (Không dùng để tính điểm uy tín công khai — xem ghi chú ở "users" phía trên.)
+    match /orders/{id} {
+      allow read: if isSignedIn() &&
+        (resource.data.buyerId == request.auth.uid
+         || resource.data.sellerId == request.auth.uid
+         || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.buyerId == request.auth.uid;
+      allow update: if isSignedIn() &&
+        (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid);
+    }
+
+    // Bình luận / trả giá dưới mỗi sản phẩm — công khai đọc, phải đăng nhập mới viết.
+    match /comments/{id} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Đánh giá người bán — chỉ người mua của đúng đơn hàng mới được tạo (kiểm tra thêm ở phía app).
+    match /ratings/{id} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.buyerId == request.auth.uid;
+    }
+
+    // Thông báo trong app — chỉ chủ nhân mới đọc/đánh dấu đã đọc được.
+    match /notifications/{id} {
+      allow read, update: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn();
+    }
+  }
+}
+

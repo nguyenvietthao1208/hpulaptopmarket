@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HPU LaptopMarket — Chợ laptop cũ dành cho sinh viên HPU</title>
+
+<!-- ===== SEO cơ bản ===== -->
+<meta name="description" content="HPU LaptopMarket — chợ mua bán laptop cũ dành riêng cho sinh viên Trường Đại học Hải Phòng. Mọi tin đăng đều được quản trị viên kiểm duyệt trước khi hiển thị công khai.">
+<link rel="canonical" href="https://hpu-lm.web.app/">
+
+<!-- ===== Open Graph / chia sẻ mạng xã hội (Facebook, Zalo, Messenger...) =====
+     Lưu ý: vì đây là trang single-page-app (SPA), các bot xem trước liên kết
+     (Facebook/Zalo) không chạy JavaScript nên KHÔNG đọc được nội dung riêng của
+     từng sản phẩm — mọi link chia sẻ đều hiện chung 1 ảnh + mô tả bên dưới, dù
+     là link trang chủ hay link 1 sản phẩm cụ thể. Nếu sau này muốn mỗi sản phẩm
+     có ảnh/tiêu đề chia sẻ riêng, cần dựng thêm một trang render phía server
+     (Cloud Functions) — hỏi tôi khi bạn cần nâng cấp phần này. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="HPU LaptopMarket">
+<meta property="og:title" content="HPU LaptopMarket — Chợ laptop cũ dành cho sinh viên HPU">
+<meta property="og:description" content="Mua bán laptop cũ trong cộng đồng sinh viên Trường Đại học Hải Phòng. Tin đăng được kiểm duyệt, người bán có điểm uy tín rõ ràng.">
+<meta property="og:image" content="https://hpu-lm.web.app/img/og-share.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://hpu-lm.web.app/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="HPU LaptopMarket — Chợ laptop cũ dành cho sinh viên HPU">
+<meta name="twitter:description" content="Mua bán laptop cũ trong cộng đồng sinh viên Trường Đại học Hải Phòng.">
+<meta name="twitter:image" content="https://hpu-lm.web.app/img/og-share.png">
+
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="512x512" href="img/favicon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<!-- EmailJS (tùy chọn — chỉ dùng nếu bạn đã cấu hình emailjsConfig trong js/firebase-config.js) -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<!-- ===== Google Analytics (GA4) =====
+     THAY "G-XXXXXXXXXX" bằng Measurement ID thật của bạn (lấy tại
+     analytics.google.com → Admin → Data Streams → chọn stream Web).
+     Để nguyên "G-XXXXXXXXXX" thì Analytics sẽ không gửi được dữ liệu, nhưng
+     web vẫn chạy bình thường, không lỗi gì. -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KM4WLR2VNB"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  gtag('js', new Date());
+  gtag('config', 'G-KM4WLR2VNB');
+  window.gtag = gtag; // để router.js gọi được khi chuyển trang (SPA page_view)
+</script>
+</head>
+<body>
+<div id="toast-region"></div>
+<button id="back-to-top" class="back-to-top" title="Lên đầu trang" onclick="scrollToTop()">↑</button>
+<header class="topbar"><div class="topbar-inner" id="header-root"></div></header>
+<main id="app"><div class="loading-block">Đang kết nối Firebase...</div></main>
+<div id="modal-root"></div>
+
+<!-- Sticky CTA trên di động — tự ẩn khi đang ở trang Đăng bán (xử lý trong router.js) -->
+<div id="sticky-mobile-cta" class="sticky-mobile-cta">
+  <button class="btn btn-ghost btn-sm" onclick="nav('home')">Trang chủ</button>
+  <button class="btn btn-primary btn-block" onclick="goSell()">+ Đăng bán ngay</button>
+</div>
+
+<footer class="site-footer">
+  <div class="wrap footer-grid">
+    <div class="footer-col">
+      <div class="footer-brand">HPU <b>LM</b></div>
+      <p class="footer-desc">Chợ mua bán laptop cũ dành cho sinh viên Trường Đại học Hải Phòng. Mọi tin đăng đều được kiểm duyệt trước khi hiển thị công khai.</p>
+    </div>
+    <div class="footer-col">
+      <div class="footer-heading">Khám phá</div>
+      <a href="#" onclick="nav('home');return false;">Trang chủ</a>
+      <a href="#" onclick="goSell();return false;">Đăng bán</a>
+      <a href="#" onclick="nav('leaderboard');return false;">Bảng xếp hạng người bán</a>
+      <a href="#" onclick="nav('history');return false;">Kho giao dịch đã hoàn tất</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-heading">Hỗ trợ</div>
+      <a href="#" onclick="nav('faq');return false;">Câu hỏi thường gặp</a>
+      <a href="#" onclick="nav('privacy');return false;">Chính sách bảo mật</a>
+    </div>
+  </div>
+  <div class="wrap footer-bottom">HPU LaptopMarket (HPU_LM) — kết nối Firebase Authentication &amp; Firestore.</div>
+</footer>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
