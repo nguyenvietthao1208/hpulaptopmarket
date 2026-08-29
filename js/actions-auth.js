@@ -10,7 +10,7 @@ import {
   deleteUser
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { appDomain } from './firebase-config.js';
-import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { doc, setDoc, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { db } from './firebase-init.js';
 import { toast, mapAuthError } from './helpers.js';
 import { closeModalsAndRefresh, openAuth, showNotification } from './modals.js';
