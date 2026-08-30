@@ -90,7 +90,6 @@ async function submitOrder(e, productId){
     const orderRef = await addDoc(collection(db,'orders'), orderData);
     await updateDoc(doc(db,'products',productId), { status:'reserved' });
     await updateDoc(doc(db,'users',state.currentUser.uid), { cart: arrayRemove(productId) });
-    state.currentUser.cart = (state.currentUser.cart||[]).filter(x=>x!==productId);
     await notifyUser(p.sellerId, 'Có đơn đặt mua mới', `${state.currentUser.name} vừa đặt mua "${p.title}".`, {page:'orders', params:{tab:'sell'}});
     if(seller && seller.email){
       await sendOrderEmail({

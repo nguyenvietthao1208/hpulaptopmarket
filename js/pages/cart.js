@@ -40,7 +40,6 @@ async function addToCart(id){
   if((state.currentUser.cart||[]).includes(id)){ toast('Sản phẩm đã có trong giỏ hàng.'); return; }
   try{
     await updateDoc(doc(db,'users',state.currentUser.uid), { cart: arrayUnion(id) });
-    state.currentUser.cart = [...(state.currentUser.cart||[]), id];
     toast('Đã thêm vào giỏ hàng.','success');
     await render();
   }catch(err){ toast('Lỗi: '+err.message,'error'); }
@@ -49,7 +48,6 @@ async function addToCart(id){
 async function removeFromCart(id){
   try{
     await updateDoc(doc(db,'users',state.currentUser.uid), { cart: arrayRemove(id) });
-    state.currentUser.cart = (state.currentUser.cart||[]).filter(x=>x!==id);
     await render();
   }catch(err){ toast('Lỗi: '+err.message,'error'); }
 }

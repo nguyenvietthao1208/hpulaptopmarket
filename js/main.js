@@ -44,6 +44,7 @@ let notifListenerReady = false;
 const seenNotifIds = new Set();
 let userProfileListener = null;
 let lastUserProfileSig = '';
+let lastPageRenderAt = 0;
 
 /* ============ Khởi tạo Dark Mode ============ */
 initDarkMode();
@@ -84,7 +85,7 @@ onAuthStateChanged(auth, async (fbUser) => {
           name: nextUser.name || '',
           phone: nextUser.phone || '',
           role: nextUser.role || 'user',
-          cart: (nextUser.cart || []).slice().sort(),
+          cart: ((nextUser.cart || []).slice().sort()),
         });
 
         if (lastUserProfileSig !== nextSig) {
@@ -92,7 +93,8 @@ onAuthStateChanged(auth, async (fbUser) => {
           lastUserProfileSig = nextSig;
           renderHeader();
 
-          if (['cart', 'home', 'profile', 'orders', 'mylistings', 'history', 'leaderboard', 'admin'].includes(state.route.page)) {
+          const routeRefreshPages = ['cart', 'home', 'profile', 'orders', 'mylistings', 'history', 'leaderboard', 'admin'];
+          if (routeRefreshPages.includes(state.route.page)) {
             refreshCurrentPage();
           }
         }
@@ -112,11 +114,17 @@ onAuthStateChanged(auth, async (fbUser) => {
         notifListenerReady = true;
         state.notifications = notifications;
         renderHeader();
-        refreshCurrentPage();
+
+        if (['orders', 'history', 'home', 'profile'].includes(state.route.page)) {
+          refreshCurrentPage();
+        }
       });
       listenToUserOrders(fbUser.uid, (orders) => {
         state.userOrders = orders;
-        refreshCurrentPage();
+
+        if (['orders', 'history', 'profile', 'home'].includes(state.route.page)) {
+          refreshCurrentPage();
+        }
       });
     } else {
       state.currentUser = null;
@@ -159,6 +167,9 @@ function isUserTyping(){
 function refreshCurrentPage(){
   if(isUserTyping()) return;
   if(document.querySelector('.modal-overlay')) return; // đang mở modal
+  const now = Date.now();
+  if(now - lastPageRenderAt < 120){ return; }
+  lastPageRenderAt = now;
   renderPageSmooth();
 }
 

@@ -178,6 +178,12 @@ async function renderHeader(){
     <nav class="nav-links">${navItems}</nav>
     <div class="topbar-right">
       <button class="btn btn-ghost btn-sm" onclick="toggleDarkMode()" title="Chuyển đổi Dark/Light Mode" aria-label="Chuyển đổi Dark/Light Mode">${state.darkMode ? '☀' : '☾'}</button>
+      ${state.currentUser ? `
+        <button class="btn btn-ghost btn-sm mobile-notif-btn" onclick="event.stopPropagation();toggleNotif();return false;" title="Thông báo" aria-label="Thông báo">
+          🔔${unread ? `<span class="count-pill">${unread}</span>` : ''}
+        </button>
+        ${notifOpen ? `<div class="mobile-notif-panel">${renderNotifPanel()}</div>` : ''}
+      ` : ''}
       <button class="btn btn-ghost btn-sm mobile-cart-btn" onclick="nav('cart');return false;" title="Giỏ hàng" aria-label="Giỏ hàng">
         🛒${cartCount ? `<span class="count-pill">${cartCount}</span>` : ''}
       </button>
@@ -263,7 +269,6 @@ async function renderHeader(){
 async function cleanupCart(staleIds, validIds){
   try{
     await updateDoc(doc(db,'users',state.currentUser.uid), { cart: validIds });
-    state.currentUser.cart = validIds;
   }catch(err){ /* im lặng — sẽ dọn lại ở lần render sau */ }
 }
 
