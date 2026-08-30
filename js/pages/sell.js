@@ -26,7 +26,7 @@ async function pageSell(){
       <div class="field"><label>Tên máy *</label><input class="input" name="title" required placeholder="vd: Dell Latitude 7420"></div>
       <div class="row2">
         <div class="field"><label>Hãng *</label><input class="input" name="brand" required placeholder="vd: Dell"></div>
-        <div class="field"><label>Giá bán (đ) *</label><input class="input" type="number" name="price" required min="100000"></div>
+        <div class="field"><label>Giá bán (đ) *</label><input class="input" type="number" name="price" required min="100000" placeholder="vd: 5000000"></div>
       </div>
       <div class="row2">
         <div class="field"><label>CPU *</label><input class="input" name="cpu" required placeholder="vd: Core i5-1135G7"></div>
@@ -59,8 +59,8 @@ async function pageSell(){
       <div class="divider"></div>
       <p class="field hint" style="text-transform:none;font-weight:600;color:var(--ink);margin-bottom:10px;">Thông tin liên hệ (bắt buộc)</p>
       <div class="row2">
-        <div class="field"><label>Số điện thoại *</label><input class="input" name="phone" required pattern="[0-9]{9,11}" value="${esc(state.currentUser.phone||'')}"></div>
-        <div class="field"><label>Khu vực *</label><input class="input" name="zone" required placeholder="vd: Hà Nội"></div>
+        <div class="field"><label>Số điện thoại *</label><input class="input" name="phone" required pattern="[0-9]{9,11}" value="${esc(state.currentUser.phone||'')}" placeholder="(+84) 9xx xxx xxx"></div>
+        <div class="field"><label>Khu vực *</label><input class="input" name="zone" required placeholder="vd: 401 C3, HPU"></div>
       </div>
       <button class="btn btn-primary btn-block" type="submit">Gửi tin đăng để duyệt</button>
     </form>

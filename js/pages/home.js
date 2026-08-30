@@ -22,10 +22,12 @@ function toggleMobileFilters(force){
   const next = typeof force === 'boolean' ? force : !mobileFiltersOpen;
   mobileFiltersOpen = next;
   panel.classList.toggle('open', next);
+  panel.setAttribute('aria-expanded', String(next));
   const trigger = document.querySelector('.mobile-filter-button');
   if(trigger){
     trigger.textContent = next ? 'Đóng bộ lọc' : 'Bộ lọc';
     trigger.classList.toggle('active', next);
+    trigger.setAttribute('aria-expanded', String(next));
   }
 }
 

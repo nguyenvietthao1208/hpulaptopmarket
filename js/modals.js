@@ -67,7 +67,7 @@ function renderAuthModalIfNeeded(){
       <div class="modal">
         <div class="modal-head"><h3>Quên mật khẩu</h3><button class="modal-close" onclick="closeAuth()">×</button></div>
         <form onsubmit="return submitForgotPassword(event)">
-          <div class="field"><label>Email muốn đặt lại mật khẩu *</label><input class="input" type="email" name="email" required></div>
+          <div class="field"><label>Email muốn đặt lại mật khẩu *</label><input class="input" type="email" name="email" required placeholder="vd: email@example.com"></div>
           <button class="btn btn-primary btn-block" type="submit">Gửi mã xác thực</button>
         </form>
         <p class="field hint" style="margin-top:14px;text-align:center;">Đã nhớ mật khẩu? <a href="#" class="linklike" onclick="openAuth('login');return false;">Đăng nhập</a></p>
@@ -113,13 +113,13 @@ function renderAuthModalIfNeeded(){
   return `<div class="modal-overlay" onclick="if(event.target===this)closeAuth()">
     <div class="modal">
       <div class="modal-head"><h3>${isLogin?'Đăng nhập':'Đăng ký tài khoản'}</h3><button class="modal-close" onclick="closeAuth()">×</button></div>
-      <button class="btn btn-ghost btn-block" type="button" onclick="signInGoogle()">Đăng nhập bằng Google</button>
+      <button class="btn btn-primary btn-block" type="button" onclick="signInGoogle()" style="background:linear-gradient(135deg, #4285f4 0%, #2d5bde 100%);font-weight:700;font-size:15px;">Đăng nhập bằng Google</button>
       <div class="divider"></div>
       <form onsubmit="return ${isLogin?'submitLogin(event)':'submitRegister(event)'}">
-        ${!isLogin? `<div class="field"><label>Họ và tên *</label><input class="input" name="name" required></div>`:''}
-        <div class="field"><label>Email *</label><input class="input" type="email" name="email" required></div>
-        ${!isLogin? `<div class="field"><label>Số điện thoại *</label><input class="input" name="phone" required pattern="[0-9]{9,11}"></div>`:''}
-        <div class="field"><label>Mật khẩu *</label><input class="input" type="password" name="password" required minlength="6"></div>
+        ${!isLogin? `<div class="field"><label>Họ và tên *</label><input class="input" name="name" required placeholder="vd: Nguyễn Văn A"></div>`:''}
+        <div class="field"><label>Email *</label><input class="input" type="email" name="email" required placeholder="vd: email@example.com"></div>
+        ${!isLogin? `<div class="field"><label>Số điện thoại *</label><input class="input" name="phone" required pattern="[0-9]{9,11}" placeholder="(+84) 9xx xxx xxx"></div>`:''}
+        <div class="field"><label>Mật khẩu *</label><input class="input" type="password" name="password" required minlength="6" placeholder="Tối thiểu 6 ký tự"></div>
         <button class="btn btn-primary btn-block" type="submit">${isLogin?'Đăng nhập':'Tạo tài khoản'}</button>
       </form>
       <p class="field hint" style="margin-top:14px;text-align:center;">${isLogin ? `Chưa có tài khoản? <a href="#" class="linklike" onclick="openAuth('register');return false;">Đăng ký</a> · <a href="#" class="linklike" onclick="openAuth('forgot');return false;">Quên mật khẩu?</a>` : `Đã có tài khoản? <a href="#" class="linklike" onclick="openAuth('login');return false;">Đăng nhập</a>`}</p>
@@ -135,8 +135,8 @@ function renderCheckoutModalIfNeeded(){
       <div class="modal-head"><h3>Xác nhận đặt mua</h3><button class="modal-close" onclick="closeCheckout()">×</button></div>
       <p class="field hint" style="text-transform:none;margin-bottom:14px;">${esc(p.title)} — <b class="mono">${fmtVND(p.price)}</b><br>Vui lòng để lại thông tin nhận hàng để người bán liên hệ giao dịch.</p>
       <form onsubmit="return submitOrder(event,'${p.id}')">
-        <div class="field"><label>Họ tên người nhận *</label><input class="input" name="name" required value="${esc(state.currentUser?state.currentUser.name:'')}"></div>
-        <div class="field"><label>Số điện thoại *</label><input class="input" name="phone" required pattern="[0-9]{9,11}" value="${esc(state.currentUser?state.currentUser.phone:'')}"></div>
+        <div class="field"><label>Họ tên người nhận *</label><input class="input" name="name" required value="${esc(state.currentUser?state.currentUser.name:'')}" placeholder="Họ tên người nhận"></div>
+        <div class="field"><label>Số điện thoại *</label><input class="input" name="phone" required pattern="[0-9]{9,11}" value="${esc(state.currentUser?state.currentUser.phone:'')}" placeholder="(+84) 9xx xxx xxx"></div>
         <div class="field"><label>Địa chỉ nhận hàng *</label><textarea class="textarea" name="address" required></textarea></div>
         <div class="field"><label>Ghi chú (tùy chọn)</label><textarea class="textarea" name="note"></textarea></div>
         <button class="btn btn-primary btn-block" type="submit">Xác nhận đặt mua</button>

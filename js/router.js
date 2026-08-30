@@ -53,6 +53,22 @@ async function nav(page, params){
 window.addEventListener('popstate', ()=>{ state.route = parseRouteFromLocation(); render(); trackPageView(location.hash); });
 window.toggleMobileNav = toggleMobileNav;
 
+function attachMobileNavListeners(){
+  // No longer needed - onclick inline handler is sufficient
+}
+
+document.addEventListener('click', (event) => {
+  const toggleBtn = event.target.closest('.mobile-nav-toggle');
+  if(toggleBtn){
+    return;
+  }
+
+  if(mobileNavOpen && !event.target.closest('.mobile-nav-sheet') && !event.target.closest('.mobile-nav-toggle')){
+    mobileNavOpen = false;
+    toggleMobileNav(false);
+  }
+});
+
 // Google Analytics (GA4) không tự theo dõi chuyển trang trong SPA (chỉ theo dõi lần
 // tải trang đầu tiên), nên cần gửi sự kiện page_view thủ công mỗi khi đổi route.
 // Nếu chưa cấu hình GA (window.gtag không tồn tại), hàm này tự bỏ qua, không lỗi gì.
@@ -90,22 +106,34 @@ async function toggleNotif(){
 function toggleMobileNav(force){
   const next = typeof force === 'boolean' ? force : !mobileNavOpen;
   mobileNavOpen = next;
-  renderHeader();
+
+  const toggle = document.querySelector('.mobile-nav-toggle');
+  const sheet = document.querySelector('.mobile-nav-sheet');
+  const overlay = document.querySelector('.mobile-nav-sheet-overlay');
+  
+  if(toggle){
+    toggle.classList.toggle('open', next);
+    toggle.textContent = next ? '✕' : '☰';
+    toggle.setAttribute('aria-label', next ? 'Đóng menu' : 'Mở menu');
+  }
+  if(sheet){
+    sheet.classList.toggle('open', next);
+  }
+  if(overlay){
+    overlay.classList.toggle('open', next);
+  }
+  
+  // Ngăn scroll body khi menu mở
+  document.body.style.overflow = next ? 'hidden' : '';
 }
 
 // Đóng panel thông báo khi bấm ra ngoài vùng panel/nút thông báo
 document.addEventListener('click', (e) => {
+  const target = e.target;
   const notifWrap = document.querySelector('.notif-wrap');
-  const mobileToggle = document.querySelector('.mobile-nav-toggle');
-  const mobileSheet = document.querySelector('.mobile-nav-sheet');
 
-  if(notifOpen && notifWrap && !notifWrap.contains(e.target)){ 
+  if(notifOpen && notifWrap && !target.closest('.notif-wrap')){ 
     notifOpen = false;
-    renderHeader();
-  }
-
-  if(mobileNavOpen && mobileToggle && !mobileToggle.contains(e.target) && mobileSheet && !mobileSheet.contains(e.target)){
-    mobileNavOpen = false;
     renderHeader();
   }
 });
@@ -146,7 +174,7 @@ async function renderHeader(){
       <span class="brand-mark"></span>
       <span class="brand-name">HPU <b>LM</b></span>
     </a>
-    <button class="mobile-nav-toggle ${mobileNavOpen?'open':''}" type="button" aria-label="Mở menu" onclick="toggleMobileNav()">${mobileNavOpen ? '✕' : '☰'}</button>
+    <button class="mobile-nav-toggle ${mobileNavOpen?'open':''}" type="button" aria-label="${mobileNavOpen ? 'Đóng menu' : 'Mở menu'}" onclick="event.stopPropagation(); window.toggleMobileNav(); return false;">${mobileNavOpen ? '✕' : '☰'}</button>
     <nav class="nav-links">${navItems}</nav>
     <div class="topbar-right">
       <button class="btn btn-ghost btn-sm" onclick="toggleDarkMode()" title="Chuyển đổi Dark/Light Mode" aria-label="Chuyển đổi Dark/Light Mode">${state.darkMode ? '☀' : '☾'}</button>
@@ -166,8 +194,65 @@ async function renderHeader(){
       <button class="btn btn-primary btn-sm" onclick="openAuth('register')">Đăng ký</button>
       `}
     </div>
-    <div class="mobile-nav-sheet ${mobileNavOpen?'open':''}">${navItems}</div>
   `;
+
+  // Tạo side menu (nằm ngoài header, ở mức body)
+  let sideMenu = document.querySelector('.mobile-nav-sheet');
+  let overlay = document.querySelector('.mobile-nav-sheet-overlay');
+  
+  // Tạo nội dung menu với auth buttons
+  const mobileMenuContent = `
+    <div class="mobile-nav-header">
+      <span>Trang chủ</span>
+    </div>
+    ${navItems}
+    <div class="mobile-nav-divider"></div>
+    ${state.currentUser ? `
+      <a href="#" class="nav-link nav-link-user" onclick="nav('profile');return false;">
+        <span class="nav-user-avatar">
+          ${state.currentUser.name.charAt(0).toUpperCase()}
+        </span>
+        ${esc(state.currentUser.name)}
+      </a>
+      <button class="nav-link nav-link-logout" onclick="logout()">
+        Đăng xuất
+      </button>
+    ` : `
+      <button class="nav-link nav-link-auth" onclick="openAuth('login');return false;">
+        Đăng nhập
+      </button>
+      <button class="nav-link nav-link-auth" onclick="openAuth('register');return false;">
+        Đăng ký
+      </button>
+    `}
+  `;
+  
+  if(!sideMenu){
+    sideMenu = document.createElement('div');
+    sideMenu.className = `mobile-nav-sheet ${mobileNavOpen?'open':''}`;
+    sideMenu.innerHTML = mobileMenuContent;
+    document.body.insertBefore(sideMenu, document.querySelector('main'));
+  } else {
+    sideMenu.innerHTML = mobileMenuContent;
+    sideMenu.className = `mobile-nav-sheet ${mobileNavOpen?'open':''}`;
+  }
+  
+  if(!overlay){
+    overlay = document.createElement('div');
+    overlay.className = 'mobile-nav-sheet-overlay';
+    overlay.onclick = (e) => { if(mobileNavOpen) { mobileNavOpen = false; toggleMobileNav(false); } };
+    document.body.insertBefore(overlay, sideMenu);
+  }
+  
+  // Thêm click handler cho các nav link
+  document.querySelectorAll('.mobile-nav-sheet .nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+      mobileNavOpen = false;
+      toggleMobileNav(false);
+    });
+  });
+
+  attachMobileNavListeners();
 }
 
 // Dọn dẹp cart chứa ID sản phẩm không còn tồn tại (đã bị xóa/gỡ bởi admin).

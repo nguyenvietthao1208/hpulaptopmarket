@@ -77,7 +77,7 @@ async function pageProduct(id){
     <form onsubmit="return submitComment(event,'${p.id}')" style="max-width:640px;margin-top:14px;">
       <div class="field"><textarea class="textarea" name="text" placeholder="Đặt câu hỏi hoặc để lại bình luận..." required></textarea></div>
       ${!isOwner? `<div class="check-row" style="margin-bottom:12px;"><input type="checkbox" id="isoffer" onchange="document.getElementById('offerprice-wrap').style.display=this.checked?'block':'none'"><label for="isoffer" style="margin:0;text-transform:none;font-weight:400;">Đây là một đề nghị trả giá</label></div>
-      <div class="field" id="offerprice-wrap" style="display:none;"><label>Mức giá đề nghị (đ)</label><input class="input" type="number" name="offerPrice"></div>`:''}
+      <div class="field" id="offerprice-wrap" style="display:none;"><label>Mức giá đề nghị (đ)</label><input class="input" type="number" name="offerPrice" placeholder="vd: 5000000"></div>`:''}
       <button class="btn btn-primary" type="submit">Gửi</button>
     </form>`: `<p class="field hint" style="margin-top:10px;">Đăng nhập để bình luận hoặc trả giá.</p>`}
   </div>`;

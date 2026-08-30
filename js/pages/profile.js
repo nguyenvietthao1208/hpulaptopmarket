@@ -32,8 +32,8 @@ async function pageProfile(){
       <div class="divider"></div>
       <p class="field hint" style="text-transform:none;">Email: <b style="color:var(--ink);">${esc(state.currentUser.email)}</b> (không thể đổi) · Tham gia ${fmtDate(state.currentUser.createdAt).split(' ')[0]}${st.completed?` · ${st.completed} đơn đã hoàn tất`:''}${st.reviewCount? ` · ★ ${st.avg.toFixed(1)} (${st.reviewCount} đánh giá)`:''}</p>
       <form onsubmit="return submitProfile(event)" style="margin-top:14px;">
-        <div class="field"><label>Họ và tên *</label><input class="input" name="name" required value="${esc(state.currentUser.name)}"></div>
-        <div class="field"><label>Số điện thoại</label><input class="input" name="phone" pattern="[0-9]{9,11}" value="${esc(state.currentUser.phone||'')}" placeholder="Chưa cập nhật"></div>
+        <div class="field"><label>Họ và tên *</label><input class="input" name="name" required value="${esc(state.currentUser.name)}" placeholder="Nhập họ tên"></div>
+        <div class="field"><label>Số điện thoại</label><input class="input" name="phone" pattern="[0-9]{9,11}" value="${esc(state.currentUser.phone||'')}" placeholder="(+84) 9xx xxx xxx"></div>
         <button class="btn btn-primary btn-block" type="submit">Lưu thay đổi</button>
       </form>
       <div class="divider" style="margin-top:18px;"></div>
@@ -44,9 +44,9 @@ async function pageProfile(){
        <h3 style="margin:16px 0 10px; font-size:18px;">Đổi mật khẩu</h3>
       ${hasPasswordProvider ? `
         <form onsubmit="return submitChangePassword(event)">
-          <div class="field"><label>Mật khẩu hiện tại *</label><input class="input" type="password" name="currentPassword" required></div>
-          <div class="field"><label>Mật khẩu mới *</label><input class="input" type="password" name="newPassword" required minlength="6"></div>
-          <div class="field"><label>Xác nhận mật khẩu mới *</label><input class="input" type="password" name="confirmPassword" required minlength="6"></div>
+          <div class="field"><label>Mật khẩu hiện tại *</label><input class="input" type="password" name="currentPassword" required placeholder="Nhập mật khẩu hiện tại"></div>
+          <div class="field"><label>Mật khẩu mới *</label><input class="input" type="password" name="newPassword" required minlength="6" placeholder="Tối thiểu 6 ký tự"></div>
+          <div class="field"><label>Xác nhận mật khẩu mới *</label><input class="input" type="password" name="confirmPassword" required minlength="6" placeholder="Nhập lại mật khẩu mới"></div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <button class="btn btn-ghost btn-block" type="submit" style="flex:1;min-width:180px;">Cập nhật mật khẩu</button>
             <button class="btn btn-secondary btn-block" type="button" onclick="forgotCurrentPassword()" style="flex:1;min-width:180px;">Quên mật khẩu hiện tại</button>
