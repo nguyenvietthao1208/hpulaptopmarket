@@ -8,7 +8,7 @@
 // ============================================================
 import { auth, db } from './firebase-init.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { doc, getDoc, setDoc, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import { state } from './state.js';
 import { toast, scrollToTop, copyText, esc } from './helpers.js';
@@ -42,6 +42,8 @@ try { if (location.hash) state.route = parseRouteFromLocation(); } catch (e) {}
 // Các snapshot sau: ID chưa thấy + chưa đọc → hiện popup.
 let notifListenerReady = false;
 const seenNotifIds = new Set();
+let userProfileListener = null;
+let lastUserProfileSig = '';
 
 /* ============ Khởi tạo Dark Mode ============ */
 initDarkMode();
@@ -49,6 +51,11 @@ initDarkMode();
 /* ============ Lắng nghe trạng thái đăng nhập Firebase ============ */
 onAuthStateChanged(auth, async (fbUser) => {
   try {
+    if (userProfileListener) {
+      userProfileListener();
+      userProfileListener = null;
+    }
+
     if (fbUser) {
       const uref = doc(db, 'users', fbUser.uid);
       let usnap = await getDoc(uref);
@@ -61,7 +68,36 @@ onAuthStateChanged(auth, async (fbUser) => {
         await setDoc(uref, newUser);
         usnap = await getDoc(uref);
       }
+
       state.currentUser = { uid: fbUser.uid, ...usnap.data() };
+      lastUserProfileSig = JSON.stringify({
+        name: state.currentUser.name || '',
+        phone: state.currentUser.phone || '',
+        role: state.currentUser.role || 'user',
+        cart: (state.currentUser.cart || []).slice().sort(),
+      });
+
+      userProfileListener = onSnapshot(uref, (snap) => {
+        if (!snap.exists()) return;
+        const nextUser = { uid: fbUser.uid, ...snap.data() };
+        const nextSig = JSON.stringify({
+          name: nextUser.name || '',
+          phone: nextUser.phone || '',
+          role: nextUser.role || 'user',
+          cart: (nextUser.cart || []).slice().sort(),
+        });
+
+        if (lastUserProfileSig !== nextSig) {
+          state.currentUser = nextUser;
+          lastUserProfileSig = nextSig;
+          renderHeader();
+
+          if (['cart', 'home', 'profile', 'orders', 'mylistings', 'history', 'leaderboard', 'admin'].includes(state.route.page)) {
+            refreshCurrentPage();
+          }
+        }
+      }, (error) => console.error('User profile listener error:', error));
+
       notifListenerReady = false; // reset cờ cho phiên đăng nhập mới
       seenNotifIds.clear(); // reset danh sách ID đã thấy
       

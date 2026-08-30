@@ -1113,3 +1113,8 @@ body.dark-mode .notif-popup-close:hover{color:var(--ink);}
   .user-chip{display:none;}
   .notif-wrap{display:none;}
 }
+
+@media(min-width:641px){
+  .mobile-cart-btn{display:none !important;}
+  .topbar-right .nav-link.cart-link{display:inline-flex;}
+}
