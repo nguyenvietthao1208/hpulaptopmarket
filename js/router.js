@@ -178,7 +178,10 @@ async function renderHeader(){
     <nav class="nav-links">${navItems}</nav>
     <div class="topbar-right">
       <button class="btn btn-ghost btn-sm" onclick="toggleDarkMode()" title="Chuyển đổi Dark/Light Mode" aria-label="Chuyển đổi Dark/Light Mode">${state.darkMode ? '☀' : '☾'}</button>
-      <a href="#" class="nav-link" onclick="nav('cart');return false;">Giỏ hàng${cartCount?`<span class="count-pill">${cartCount}</span>`:''}</a>
+      <button class="btn btn-ghost btn-sm mobile-cart-btn" onclick="nav('cart');return false;" title="Giỏ hàng" aria-label="Giỏ hàng">
+        🛒${cartCount ? `<span class="count-pill">${cartCount}</span>` : ''}
+      </button>
+      <a href="#" class="nav-link cart-link" onclick="nav('cart');return false;">Giỏ hàng${cartCount?`<span class="count-pill">${cartCount}</span>`:''}</a>
       ${state.currentUser?`
       <div class="notif-wrap">
         <a href="#" class="nav-link" onclick="event.stopPropagation();toggleNotif();return false;">Thông báo${unread?`<span class="count-pill">${unread}</span>`:''}</a>
