@@ -22,6 +22,7 @@ import { pageLeaderboard } from './pages/leaderboard.js';
 import { pageHistory } from './pages/history.js';
 import { pageFaq } from './pages/faq.js';
 import { pagePrivacy } from './pages/privacy.js';
+import { pageCommunity } from './pages/community.js';
 import { pageNotFound } from './pages/notfound.js';
 
 let notifOpen = false;
@@ -323,6 +324,7 @@ async function buildPageHtml(){
     case 'history': return await pageHistory();
     case 'faq': return await pageFaq();
     case 'privacy': return await pagePrivacy();
+    case 'community': return await pageCommunity();
     default: return pageNotFound();
   }
 }

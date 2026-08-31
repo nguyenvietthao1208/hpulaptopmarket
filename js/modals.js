@@ -61,6 +61,7 @@ function renderAuthModalIfNeeded(){
   const isRegister = authModal==='register';
   const isForgot = authModal==='forgot';
   const isForgotVerify = authModal==='forgot-verify';
+  const isForgotPassword = authModal==='forgot-password';
 
   if(isForgot){
     return `<div class="modal-overlay" onclick="if(event.target===this)closeAuth()">
@@ -76,35 +77,32 @@ function renderAuthModalIfNeeded(){
   }
 
   if(isForgotVerify){
-    const signedInEmail = state.currentUser && state.currentUser.email ? state.currentUser.email.trim().toLowerCase() : '';
-    const hasSignedInUser = !!signedInEmail;
     return `<div class="modal-overlay" onclick="if(event.target===this)closeAuth()">
       <div class="modal">
         <div class="modal-head"><h3>Xác thực mã</h3><button class="modal-close" onclick="closeAuth()">×</button></div>
         <form onsubmit="return submitForgotPasswordVerify(event)">
-          ${hasSignedInUser ? `
-            <div class="field">
-              <label>Mã xác thực 4 chữ số *</label>
-              <div style="display:grid;grid-template-columns:repeat(4,minmax(48px,1fr));gap:10px;">
-                ${[0,1,2,3].map(i => `<input class="input" data-otp-index="${i}" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" style="text-align:center;font-size:22px;padding:10px 0;" oninput="handleOtpInput(this)" onkeydown="handleOtpKeydown(this, event)" onpaste="handleOtpPaste(event)" />`).join('')}
-              </div>
+          <p class="field hint" style="text-align:center;margin-bottom:16px;color:#666;">Nhập mã xác thực 4 chữ số đã được gửi tới email của bạn</p>
+          <div class="field">
+            <label>Mã xác thực 4 chữ số *</label>
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(48px,1fr));gap:10px;">
+              ${[0,1,2,3].map(i => `<input class="input" data-otp-index="${i}" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" style="text-align:center;font-size:22px;padding:10px 0;" oninput="handleOtpInput(this)" onkeydown="handleOtpKeydown(this, event)" onpaste="handleOtpPaste(event)" />`).join('')}
             </div>
-            <div class="field"><label>Mật khẩu mới *</label><input class="input" type="password" name="newPassword" required minlength="6" placeholder="Nhập mật khẩu mới"></div>
-            <div class="field"><label>Nhập lại mật khẩu mới *</label><input class="input" type="password" name="confirmPassword" required minlength="6" placeholder="Nhập lại mật khẩu mới"></div>
-            <input type="hidden" name="email" value="${esc(signedInEmail)}">
-          ` : `
-            <p class="field hint" style="text-align:center;margin-bottom:16px;color:#666;">Nhập mã xác thực 4 chữ số đã được gửi tới email của bạn</p>
-            <div class="field">
-              <label>Mã xác thực 4 chữ số *</label>
-              <div style="display:grid;grid-template-columns:repeat(4,minmax(48px,1fr));gap:10px;">
-                ${[0,1,2,3].map(i => `<input class="input" data-otp-index="${i}" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" style="text-align:center;font-size:22px;padding:10px 0;" oninput="handleOtpInput(this)" onkeydown="handleOtpKeydown(this, event)" onpaste="handleOtpPaste(event)" />`).join('')}
-              </div>
-            </div>
-            <input type="hidden" name="email" value="">
-            <input type="hidden" name="newPassword" value="">
-            <input type="hidden" name="confirmPassword" value="">
-          `}
-          <button class="btn btn-primary btn-block" type="submit">${hasSignedInUser ? 'Cập nhật mật khẩu' : 'Xác thực'}</button>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit">Xác thực</button>
+        </form>
+      </div>
+    </div>`;
+  }
+
+  if(isForgotPassword){
+    return `<div class="modal-overlay" onclick="if(event.target===this)closeAuth()">
+      <div class="modal">
+        <div class="modal-head"><h3>Đặt mật khẩu mới</h3><button class="modal-close" onclick="closeAuth()">×</button></div>
+        <p class="field hint" style="text-transform:none;margin-bottom:14px;">Mã xác thực đúng. Hãy nhập mật khẩu mới cho tài khoản của bạn.</p>
+        <form onsubmit="return submitForgotPasswordChange(event)">
+          <div class="field"><label>Mật khẩu mới *</label><input class="input" type="password" name="newPassword" required minlength="6" autocomplete="new-password" placeholder="Tối thiểu 6 ký tự"></div>
+          <div class="field"><label>Nhập lại mật khẩu mới *</label><input class="input" type="password" name="confirmPassword" required minlength="6" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới"></div>
+          <button class="btn btn-primary btn-block" type="submit">Cập nhật mật khẩu</button>
         </form>
       </div>
     </div>`;

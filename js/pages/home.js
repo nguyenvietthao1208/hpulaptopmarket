@@ -79,6 +79,7 @@ async function pageHome(){
       <h1 class="hero-title">Mua bán laptop cũ trong cộng đồng sinh viên HPU — nhanh, rõ ràng, đáng tin cậy.</h1>
       <p class="hero-sub">Người bán mô tả chi tiết cấu hình, người mua xem đánh giá uy tín và giao dịch an toàn trong hệ thống đã kiểm duyệt.</p>
       <div class="hero-actions">
+        <button class="btn btn-community" onclick="nav('community')">Quy định cộng đồng</button>
         <button class="btn btn-ghost" onclick="nav('privacy')">Chính sách bảo mật</button>
         <button class="btn btn-ghost" onclick="nav('faq')">Câu hỏi thường gặp</button>
         <button class="btn btn-primary" onclick="goSell()">+ Đăng bán</button>

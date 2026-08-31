@@ -22,7 +22,7 @@ import {
   renderModals, closeModalsAndRefresh
 } from './modals.js';
 
-import { submitRegister, submitLogin, submitForgotPassword, submitForgotPasswordVerify, forgotCurrentPassword, signInGoogle, logout, submitDeleteAccountStep1, submitDeleteAccountStep2 } from './actions-auth.js';
+import { submitRegister, submitLogin, submitForgotPassword, submitForgotPasswordVerify, submitForgotPasswordChange, forgotCurrentPassword, signInGoogle, logout, submitDeleteAccountStep1, submitDeleteAccountStep2 } from './actions-auth.js';
 import { setFilter, resetFilters } from './pages/home.js';
 import { submitComment } from './pages/product.js';
 import { submitListing, onImagesSelected, removeImage } from './pages/sell.js';
@@ -263,7 +263,7 @@ Object.assign(window, {
   cancelOrderPrompt, closeCancelModal, openDeleteProductModal, closeDeleteProductModal,
   openDeleteAccountModal, closeDeleteAccountModal, showNotification, closeNotification,
   renderModals, closeModalsAndRefresh,
-  submitRegister, submitLogin, submitForgotPassword, submitForgotPasswordVerify, forgotCurrentPassword, signInGoogle, logout,
+  submitRegister, submitLogin, submitForgotPassword, submitForgotPasswordVerify, submitForgotPasswordChange, forgotCurrentPassword, signInGoogle, logout,
   submitListing, deleteListing, approveProduct, submitReject, submitDeleteProduct,
   onImagesSelected, removeImage,
   addToCart, removeFromCart, submitOrder,

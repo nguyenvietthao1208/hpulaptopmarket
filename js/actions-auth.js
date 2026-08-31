@@ -156,8 +156,6 @@ async function submitForgotPasswordVerify(e){
   const f = new FormData(e.target);
   const otpInputs = Array.from(document.querySelectorAll('input[data-otp-index]'));
   const code = otpInputs.map(input => (input.value || '').trim()).join('');
-  const newPassword = (f.get('newPassword') || '').trim();
-  const confirmPassword = (f.get('confirmPassword') || '').trim();
   const resetSession = getResetSession();
 
   if(!resetSession){
@@ -178,40 +176,16 @@ async function submitForgotPasswordVerify(e){
     return false;
   }
 
-  const isCurrentUserMatch = auth.currentUser && auth.currentUser.email && auth.currentUser.email.toLowerCase() === resetSession.email;
-  const isLoggedInReset = resetSession.mode === 'logged-in' || isCurrentUserMatch;
-
-  if(isLoggedInReset){
-    // Logged-in user: change password directly
-    if(!newPassword || newPassword.length < 6){
-      toast('Mật khẩu mới phải có ít nhất 6 ký tự.', 'error');
-      return false;
-    }
-    if(newPassword !== confirmPassword){
-      toast('Mật khẩu mới và nhập lại mật khẩu mới không khớp.', 'error');
-      return false;
-    }
-
-    try{
-      const hasPasswordProvider = (auth.currentUser.providerData || []).some(p => p.providerId === 'password');
-      if(!hasPasswordProvider){
-        toast('Tài khoản hiện đang dùng Google. Hãy đăng nhập bằng email/password trước khi đổi mật khẩu.', 'error');
+  try{
+    if(resetSession.mode === 'logged-in'){
+      if(!auth.currentUser || auth.currentUser.email?.toLowerCase() !== resetSession.email){
+        toast('Tài khoản đăng nhập không khớp với email xác thực.', 'error');
         return false;
       }
-
-      await updatePassword(auth.currentUser, newPassword);
-      clearResetSession();
-      toast('Mật khẩu đã được đổi thành công.', 'success');
-      await closeModalsAndRefresh();
-      return false;
-    }catch(err){
-      toast(mapAuthError(err), 'error');
+      openAuth('forgot-password');
       return false;
     }
-  }
 
-  // Guest user: code verified, show notification and send reset email
-  try{
     const actionCodeSettings = {
       url: `${appDomain}/#login?resetSuccess=true`,
       handleCodeInApp: false
@@ -226,6 +200,42 @@ async function submitForgotPasswordVerify(e){
     toast(mapAuthError(err), 'error');
   }
 
+  return false;
+}
+
+async function submitForgotPasswordChange(e){
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const newPassword = String(formData.get('newPassword') || '');
+  const confirmPassword = String(formData.get('confirmPassword') || '');
+  const resetSession = getResetSession();
+
+  if(!resetSession || resetSession.mode !== 'logged-in' || !auth.currentUser){
+    toast('Phiên đổi mật khẩu không hợp lệ. Vui lòng xác thực lại.', 'error');
+    openAuth('forgot');
+    return false;
+  }
+  if(!newPassword || newPassword.length < 6){
+    toast('Mật khẩu mới phải có ít nhất 6 ký tự.', 'error');
+    return false;
+  }
+  if(newPassword !== confirmPassword){
+    toast('Mật khẩu mới và nhập lại mật khẩu mới không khớp.', 'error');
+    return false;
+  }
+
+  try{
+    await updatePassword(auth.currentUser, newPassword);
+    clearResetSession();
+    await closeModalsAndRefresh();
+    toast('Đổi mật khẩu thành công.', 'success');
+  }catch(err){
+    if(err?.code === 'auth/requires-recent-login'){
+      toast('Phiên đăng nhập đã hết hạn. Vui lòng đăng xuất, đăng nhập lại rồi thực hiện lại.', 'error');
+    }else{
+      toast(mapAuthError(err), 'error');
+    }
+  }
   return false;
 }
 
@@ -405,4 +415,4 @@ async function submitDeleteAccountStep2(e){
   return false;
 }
 
-export { submitRegister, submitLogin, submitForgotPassword, submitForgotPasswordVerify, forgotCurrentPassword, signInGoogle, logout, submitDeleteAccountStep1, submitDeleteAccountStep2 };
+export { submitRegister, submitLogin, submitForgotPassword, submitForgotPasswordVerify, submitForgotPasswordChange, forgotCurrentPassword, signInGoogle, logout, submitDeleteAccountStep1, submitDeleteAccountStep2 };
