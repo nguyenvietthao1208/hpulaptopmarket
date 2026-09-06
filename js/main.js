@@ -35,7 +35,7 @@ import { onLeaderboardSearchInput } from './pages/leaderboard.js';
 import { toggleFaq } from './pages/faq.js';
 
 /* ============ Đọc route ban đầu từ URL (để reload trang không bị mất) ============ */
-try { if (location.hash) state.route = parseRouteFromLocation(); } catch (e) {}
+try { state.route = location.hash ? parseRouteFromLocation() : { page: 'intro', params: {} }; } catch (e) {}
 
 // Theo dõi thông báo đã thấy bằng ID — chính xác hơn so sánh số lượng.
 // Snapshot đầu tiên: chỉ ghi nhận ID (không popup — đó là thông báo cũ).

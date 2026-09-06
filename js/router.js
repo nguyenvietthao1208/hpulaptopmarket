@@ -23,6 +23,7 @@ import { pageHistory } from './pages/history.js';
 import { pageFaq } from './pages/faq.js';
 import { pagePrivacy } from './pages/privacy.js';
 import { pageCommunity } from './pages/community.js';
+import { pageIntro } from './pages/intro.js';
 import { pageNotFound } from './pages/notfound.js';
 
 let notifOpen = false;
@@ -80,6 +81,7 @@ function trackPageView(hashPath){
 }
 
 async function render(){
+  document.body.classList.toggle('intro-route', state.route.page === 'intro');
   await renderHeader();
   await renderPage();
   window.scrollTo(0,0);
@@ -310,6 +312,7 @@ function skeletonFor(page){
 // Sinh HTML cho trang hiện tại (dùng chung cho renderPage và renderPageSmooth)
 async function buildPageHtml(){
   switch(state.route.page){
+    case 'intro': return pageIntro();
     case 'home': return await pageHome();
     case 'product': return await pageProduct(state.route.params.id);
     case 'sell': return await pageSell();
